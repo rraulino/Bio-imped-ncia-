@@ -155,10 +155,21 @@ details[open] summary{margin-bottom:10px}
 .segfig .c b{display:block;font:700 13px var(--f-mono);color:var(--p-ink)}
 .segfig .c.tr{grid-row:span 2;display:grid;align-content:center;background:var(--p-soft)}
 .two-p{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
-.hist td.up{color:var(--p-bad)}.hist td.down{color:var(--p-ok)}
-.gloss{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 16px;font-size:10px;margin:0}
+.hchart{display:grid}
+.hrow{display:grid;grid-template-columns:160px 440px 63px 63px;align-items:center;border-bottom:1px solid var(--p-line)}
+.hrow svg{display:block;overflow:visible}
+.hl{font:600 10px/1.2 var(--f-body);padding-right:6px}
+.hhead{background:var(--p-soft);border-bottom:1px solid var(--p-line)}
+.hdates{position:relative;height:30px}
+.hdates span{position:absolute;top:9px;transform:translateX(-50%);font:600 9px var(--f-mono);color:var(--p-muted);white-space:nowrap}
+.hd{text-align:right;padding:0 6px;font:600 8.5px var(--f-body);text-transform:uppercase;letter-spacing:.04em;color:var(--p-muted);line-height:1.2}
+.hd small{display:block;text-transform:none;letter-spacing:0;font:500 8.5px var(--f-mono)}
+.hd.n{font:600 11px var(--f-mono);color:var(--p-ink);text-transform:none}
+.hd.up,.hnote .up{color:var(--p-bad)}.hd.down,.hnote .down{color:var(--p-ok)}
+.hnote{font-size:8.5px;color:var(--p-muted);margin-top:4px}
+.gloss{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:2px 16px;font-size:9.5px;margin:0}
 .gloss dt{font-weight:700}
-.gloss dd{margin:0 0 4px;color:var(--p-muted)}
+.gloss dd{margin:0 0 2px;color:var(--p-muted)}
 .exbadge{position:absolute;top:10px;right:32px;font:700 9px var(--f-body);color:var(--p-warn);border:1px solid var(--p-warn);padding:1px 6px;text-transform:uppercase;letter-spacing:.06em}
 @media (prefers-reduced-motion:no-preference){.btn{transition:opacity .2s}}
 </style>
@@ -581,14 +592,7 @@ details[open] summary{margin-bottom:10px}
     const H6 = histAll.slice(-6);
     const rows = [["W","Peso (kg)",1,true],["SMM","Massa musc. esquelética (kg)",1,false],["FM","Massa de gordura (kg)",1,true],["PBF","Percentual de gordura (%)",1,true],
       ["SLM","Massa magra (kg)",1,false],["TBW","Água corporal (L)",1,null],["ICW","Água intracelular (L)",1,null],["ECW","Água extracelular (L)",1,null],["BMI","IMC",1,true],["VFL","Gordura visceral (nível)",0,true]];
-    const histHtml = H6.length >= 2 ? `<section class="p-sec"><h3>Histórico da composição corporal <small>${histAll.length > 6 ? "últimas 6 de "+histAll.length+" avaliações" : histAll.length+" avaliações"}</small></h3>
-      <table class="hist"><thead><tr><th></th>${H6.map(h=>`<th>${h.date}</th>`).join("")}<th>Variação</th></tr></thead><tbody>
-      ${rows.filter(([k]) => H6.some(h => has(h[k]))).map(([k,lab,dec,downGood]) => {
-        const first = H6.find(h => has(h[k])), lastH = [...H6].reverse().find(h => has(h[k]));
-        const dv = first && lastH && first !== lastH ? lastH[k] - first[k] : NaN;
-        const cls = !has(dv) || Math.abs(dv) < 0.05 || downGood === null ? "" : ((dv < 0) === downGood ? "down" : "up");
-        return `<tr><td>${lab}</td>${H6.map(h => `<td class="n" style="font-size:10.5px">${has(h[k]) ? f(h[k],dec) + (h.est && h.est[k] ? `<span class="est">*</span>` : "") : "—"}</td>`).join("")}<td class="n ${cls}" style="font-size:10.5px">${sgn(dv,dec)}</td></tr>`;
-      }).join("")}</tbody></table></section>` : "";
+    const histHtml = H6.length >= 2 ? histChart(H6, histAll.length, rows) : "";
 
     const segTable = (r.hasSegM || r.hasSegG) ? `<section class="p-sec"><h3>Análise segmentar</h3>
       <div class="two-p">
@@ -626,6 +630,49 @@ details[open] summary{margin-bottom:10px}
 
     stack.innerHTML = p1 + p2;
     fit();
+  }
+
+  // histórico: uma linha por indicador, pontos alinhados às datas, escala própria por linha
+  function histChart(H, total, rows){
+    const n = H.length, PW = 440, PH = 37, X = i => (i + 0.5) * PW / n;
+    const lastI = n - 1, prevI = n - 2;
+    const cell = (dv, dec, downGood) => {
+      if (!has(dv)) return `<div class="hd n">—</div>`;
+      const z = Math.abs(dv) < 0.05;
+      const cls = z || downGood === null ? "" : ((dv < 0) === downGood ? "down" : "up");
+      return `<div class="hd n ${cls}">${z ? "0" : sgn(dv, dec)}</div>`;
+    };
+    const body = rows.filter(([k]) => H.some(h => has(h[k]))).map(([k, lab, dec, downGood]) => {
+      const vals = H.map(h => h[k]);
+      const ok = vals.filter(has);
+      const mean = ok.reduce((a,b) => a+b, 0) / ok.length;
+      let lo = Math.min(...ok), hi = Math.max(...ok);
+      const minSpan = Math.max(k === "VFL" ? 2 : 0, Math.abs(mean) * 0.05);
+      if (hi - lo < minSpan){ const c = (hi + lo) / 2; lo = c - minSpan/2; hi = c + minSpan/2; }
+      const Y = v => 31 - (v - lo) / (hi - lo) * 17;
+      const pts = vals.map((v, i) => has(v) ? [X(i), Y(v), v, i] : null).filter(Boolean);
+      const path = pts.map((p, j) => (j ? "L" : "M") + p[0].toFixed(1) + " " + p[1].toFixed(1)).join(" ");
+      const marks = pts.map(([x, y, v, i]) => {
+        const isEst = H[i].est && H[i].est[k], isLast = i === lastI;
+        return `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${isLast ? 4 : 3.2}" fill="${isEst ? "#ffffff" : isLast ? "var(--p-head)" : "#5b8f9b"}" stroke="${isLast || isEst ? "var(--p-head)" : "#ffffff"}" stroke-width="${isEst ? 1.6 : 1.2}"></circle>
+          <text x="${x.toFixed(1)}" y="${(y - 7).toFixed(1)}" text-anchor="middle" fill="var(--p-ink)" style="font:${isLast ? 700 : 500} 9.5px var(--f-mono)">${f(v, dec)}${isEst ? "*" : ""}</text>`;
+      }).join("");
+      const grid = H.map((_, i) => `<line x1="${X(i).toFixed(1)}" x2="${X(i).toFixed(1)}" y1="2" y2="${PH-2}" stroke="#e4eaec" stroke-width="1"></line>`).join("");
+      const dPrev = has(vals[lastI]) && has(vals[prevI]) ? vals[lastI] - vals[prevI] : NaN;
+      const firstI = vals.findIndex(has);
+      const dTot = has(vals[lastI]) && firstI < lastI ? vals[lastI] - vals[firstI] : NaN;
+      return `<div class="hrow"><div class="hl">${lab}</div>
+        <svg viewBox="0 0 ${PW} ${PH}" width="${PW}" height="${PH}" role="img" aria-label="${esc(lab)}: ${vals.map((v,i) => H[i].date + " " + (has(v) ? f(v,dec) : "sem dado")).join(", ")}">${grid}<path d="${path}" fill="none" stroke="#5b8f9b" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"></path>${marks}</svg>
+        ${cell(dPrev, dec, downGood)}${cell(dTot, dec, downGood)}</div>`;
+    }).join("");
+    return `<section class="p-sec"><h3>Histórico da composição corporal <small>${total > 6 ? "últimas 6 de " + total + " avaliações" : total + " avaliações"}</small></h3>
+      <div class="hchart">
+        <div class="hrow hhead"><div class="hl"></div><div class="hdates" style="width:${PW}px">${H.map((h, i) => `<span style="left:${X(i)}px">${h.date}</span>`).join("")}</div>
+          <div class="hd">vs anterior<small>${H[prevI].date}</small></div><div class="hd">vs primeira<small>${H[0].date}</small></div></div>
+        ${body}
+      </div>
+      <div class="hnote">Cada linha tem escala própria; compare a tendência, não a altura entre linhas. Variação: valor de ${H[lastI].date} menos a data indicada. <span class="down">Verde</span> = mudança favorável, <span class="up">vermelho</span> = desfavorável, — = sem medida em uma das datas. Círculo vazado = valor estimado.</div>
+    </section>`;
   }
 
   function buildHistory(d, r){
