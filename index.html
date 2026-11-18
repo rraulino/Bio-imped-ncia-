@@ -8,13 +8,12 @@
 <meta name="theme-color" content="#0e5466">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
 <style>
-/* Layout: ficha clínica — formulário à esquerda (desktop) ou em aba (celular), laudo em folha branca com réguas de % do padrão */
+/* Layout: barra de ações (importar/exportar) · formulário de conferência à esquerda · folhas A4 do laudo à direita, escaladas para caber na tela */
 :root{
   --bg:#eef2f3; --paper:#ffffff; --ink:#14232a; --muted:#5b6d74; --line:#d3dde0; --soft:#f4f7f8;
-  --accent:#0e5466; --accent-ink:#ffffff; --bar:#24363d; --band:#d9ebe4;
-  --ok:#1d7a4c; --warn:#b26a00; --bad:#b3261e;
+  --accent:#0e5466; --accent-ink:#ffffff; --ok:#1d7a4c; --warn:#b26a00; --bad:#b3261e;
   --f-display:"Archivo","Helvetica Neue",Arial,sans-serif;
   --f-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
   --f-mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
@@ -23,119 +22,145 @@
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
     --bg:#0c1416; --paper:#131e21; --ink:#e3ecee; --muted:#93a6ac; --line:#2a3a3f; --soft:#18262a;
-    --accent:#4fb3c7; --accent-ink:#06191e; --bar:#c9d8dc; --band:#1d3a33;
-    --ok:#5fcf93; --warn:#f0a83c; --bad:#ff7a6e; color-scheme:dark;
+    --accent:#4fb3c7; --accent-ink:#06191e; --ok:#5fcf93; --warn:#f0a83c; --bad:#ff7a6e; color-scheme:dark;
   }
 }
 :root[data-theme="dark"]{
   --bg:#0c1416; --paper:#131e21; --ink:#e3ecee; --muted:#93a6ac; --line:#2a3a3f; --soft:#18262a;
-  --accent:#4fb3c7; --accent-ink:#06191e; --bar:#c9d8dc; --band:#1d3a33;
-  --ok:#5fcf93; --warn:#f0a83c; --bad:#ff7a6e; color-scheme:dark;
+  --accent:#4fb3c7; --accent-ink:#06191e; --ok:#5fcf93; --warn:#f0a83c; --bad:#ff7a6e; color-scheme:dark;
 }
 *{box-sizing:border-box}
+[hidden]{display:none!important}
 html,body{margin:0}
 body{background:var(--bg);color:var(--ink);font:15px/1.5 var(--f-body);
   padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:16px 48px}
 h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0}
-.wrap{max-width:1280px;margin:0 auto;display:grid;gap:16px}
+.wrap{max-width:1400px;margin:0 auto;display:grid;gap:14px}
 header.top{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px}
 header.top h1{font-size:1.5rem;font-weight:800;letter-spacing:-.01em}
 header.top h1 span{color:var(--accent)}
 header.top p{margin:0;color:var(--muted);font-size:.85rem}
+.actions{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:stretch}
+@media (max-width:640px){.actions{grid-template-columns:minmax(0,1fr)}}
+.drop{display:flex;align-items:center;gap:12px;background:var(--paper);border:1.5px dashed var(--accent);border-radius:12px;padding:12px 16px;cursor:pointer;min-width:0}
+.drop.over{background:var(--soft)}
+.drop input{position:absolute;width:1px;height:1px;opacity:0}
+.drop b{display:block;font-family:var(--f-display);font-size:1rem}
+.drop small{color:var(--muted);font-size:.8rem}
+.drop svg{flex:none}
+.btn{border:1px solid var(--accent);background:var(--accent);color:var(--accent-ink);font:600 .92rem var(--f-body);padding:12px 18px;border-radius:10px;cursor:pointer}
+.btn.ghost{background:transparent;color:var(--accent)}
+.btn.small{padding:7px 12px;font-size:.82rem;border-radius:8px}
+.btn:disabled{opacity:.5;cursor:wait}
+.btn:focus-visible,input:focus-visible,select:focus-visible,.drop:focus-within{outline:2px solid var(--accent);outline-offset:2px}
+.msg{font-size:.85rem;margin:0;min-height:1.2em}
+.msg.ok{color:var(--ok)}.msg.bad{color:var(--bad)}
+.msg ul{margin:4px 0 0;padding-left:18px;color:var(--muted)}
 .tabs{display:none;gap:4px;background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:4px}
 .tabs button{flex:1;border:0;background:transparent;color:var(--ink);font:600 .9rem var(--f-body);padding:10px 8px;border-radius:7px;cursor:pointer}
 .tabs button[aria-selected="true"]{background:var(--accent);color:var(--accent-ink)}
-.grid{display:grid;grid-template-columns:minmax(300px,380px) minmax(0,1fr);gap:16px;align-items:start}
+.grid{display:grid;grid-template-columns:minmax(300px,360px) minmax(0,1fr);gap:16px;align-items:start}
 .panel{min-width:0}
-@media (max-width:900px){
+@media (max-width:980px){
   .grid{grid-template-columns:minmax(0,1fr)}
   .tabs{display:flex;position:sticky;top:env(safe-area-inset-top,0px);z-index:5}
   .panel.off{display:none}
 }
-/* formulário */
 form.card{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:16px;display:grid;gap:14px}
-@media (min-width:901px){form.card{position:sticky;top:16px;max-height:calc(100vh - 32px);overflow:auto}}
-fieldset{border:0;margin:0;padding:0;display:grid;gap:10px}
+@media (min-width:981px){form.card{position:sticky;top:16px;max-height:calc(100vh - 32px);overflow:auto}}
+fieldset{border:0;margin:0;padding:0;display:grid;gap:10px;min-width:0}
 legend{font:700 .72rem var(--f-display);text-transform:uppercase;letter-spacing:.08em;color:var(--accent);padding:0;margin-bottom:6px}
 .row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
 .row3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
-label{display:grid;gap:4px;font-size:.78rem;color:var(--muted);font-weight:500;min-width:0}
-input,select,textarea{width:100%;font:500 .95rem var(--f-body);color:var(--ink);background:var(--soft);border:1px solid var(--line);border-radius:8px;padding:9px 10px;min-width:0}
-input:focus-visible,select:focus-visible,textarea:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+label{display:grid;gap:4px;font-size:.76rem;color:var(--muted);font-weight:500;min-width:0}
+input,select{width:100%;font:500 .93rem var(--f-body);color:var(--ink);background:var(--soft);border:1px solid var(--line);border-radius:8px;padding:8px 9px;min-width:0}
 input[type=number]{font-family:var(--f-mono)}
 details summary{cursor:pointer;font:700 .72rem var(--f-display);text-transform:uppercase;letter-spacing:.08em;color:var(--accent)}
 details[open] summary{margin-bottom:10px}
-.hint{font-size:.75rem;color:var(--muted);margin:0}
-.btns{display:flex;flex-wrap:wrap;gap:8px}
-.btn{border:1px solid var(--accent);background:var(--accent);color:var(--accent-ink);font:600 .88rem var(--f-body);padding:10px 14px;border-radius:8px;cursor:pointer}
-.btn.ghost{background:transparent;color:var(--accent)}
-.btn.small{padding:6px 10px;font-size:.8rem}
-.btn.danger{border-color:var(--bad);color:var(--bad);background:transparent}
-.toast{font-size:.8rem;color:var(--ok);min-height:1.2em;margin:0}
-/* laudo */
-.sheet{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:20px;display:grid;gap:22px}
-.sheet-head{display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px;border-bottom:2px solid var(--ink);padding-bottom:12px}
-.sheet-head h2{font-size:1.25rem;font-weight:800}
-.ident{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:.85rem}
-.ident b{font-family:var(--f-mono);font-weight:600}
-.ident span{color:var(--muted)}
-.example{background:var(--soft);border:1px dashed var(--warn);color:var(--ink);border-radius:8px;padding:8px 12px;font-size:.82rem}
-section.blk{display:grid;gap:10px;min-width:0;align-content:start}
-section.blk>h3{font-size:.95rem;font-weight:800;text-transform:uppercase;letter-spacing:.04em;display:flex;align-items:baseline;gap:8px;border-bottom:1px solid var(--line);padding-bottom:6px}
-section.blk>h3 small{font:400 .75rem var(--f-body);text-transform:none;letter-spacing:0;color:var(--muted)}
-.two{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:22px;align-items:start}
-@media (max-width:1100px){.two{grid-template-columns:minmax(0,1fr)}}
-.scroll{overflow-x:auto}
-table{border-collapse:collapse;width:100%;font-size:.85rem;font-variant-numeric:tabular-nums}
-th,td{padding:7px 8px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
-th:first-child,td:first-child{text-align:left}
-thead th{font:600 .7rem var(--f-body);text-transform:uppercase;letter-spacing:.05em;color:var(--muted);background:var(--soft)}
-td.num{font-family:var(--f-mono);font-weight:600}
-td.rng{color:var(--muted);font-family:var(--f-mono);font-size:.78rem}
-/* réguas */
-.bars{display:grid;gap:4px}
-.brow{display:grid;grid-template-columns:132px minmax(0,1fr);gap:10px;align-items:center}
-.brow .lab{font-size:.8rem;font-weight:600;line-height:1.2}
-.brow .lab small{display:block;font-weight:400;color:var(--muted);font-size:.7rem}
-.scale{position:relative;height:18px;font:500 .66rem var(--f-mono);color:var(--muted)}
-.scale span{position:absolute;transform:translateX(-50%);top:2px}
-.track{position:relative;height:22px;background:var(--soft);border-radius:2px}
-.track .band{position:absolute;top:0;bottom:0;background:var(--band)}
-.track .tick{position:absolute;top:0;bottom:0;width:1px;background:var(--line)}
-.track .fill{position:absolute;left:0;top:5px;height:12px;background:var(--bar);border-radius:0 2px 2px 0}
-.track .val{position:absolute;top:2px;font:600 .78rem var(--f-mono);color:var(--ink);white-space:nowrap}
-@media (max-width:520px){.brow{grid-template-columns:86px minmax(0,1fr)}.scale span.alt{display:none}}
-.pill{display:inline-block;font:600 .7rem var(--f-body);padding:2px 8px;border-radius:99px;border:1px solid currentColor}
-.pill.ok{color:var(--ok)}.pill.warn{color:var(--warn)}.pill.bad{color:var(--bad)}.pill.neu{color:var(--muted)}
-/* lateral */
-.side{display:grid;gap:16px;align-content:start}
-.score{display:flex;align-items:baseline;gap:6px}
-.score b{font:800 3rem/1 var(--f-display);color:var(--accent)}
-.score span{color:var(--muted);font-family:var(--f-mono)}
-.kv{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 12px;font-size:.85rem}
-.kv dt{color:var(--muted)}
-.kv dd{margin:0;text-align:right;font:600 .85rem var(--f-mono)}
-.shape{display:flex;gap:12px;align-items:center}
-.shape .glyph{font:800 2.4rem/1 var(--f-display);width:56px;height:56px;display:grid;place-items:center;border:2px solid var(--ink);border-radius:8px}
-.shape p{margin:0;font-size:.82rem}
-/* segmentar */
-.body{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;max-width:520px}
-.seg{background:var(--soft);border:1px solid var(--line);border-radius:8px;padding:8px;text-align:center;font-size:.75rem;color:var(--muted)}
-.seg b{display:block;font:600 1rem var(--f-mono);color:var(--ink)}
-.seg.tr{grid-row:span 2;display:grid;align-content:center}
-.notes{margin:0;padding-left:18px;font-size:.85rem;display:grid;gap:4px}
-.foot{font-size:.75rem;color:var(--muted);border-top:1px solid var(--line);padding-top:12px;margin:0}
-.hist-empty{color:var(--muted);font-size:.85rem;margin:0}
-.up{color:var(--warn)}.down{color:var(--ok)}
-td.del{white-space:nowrap}
-@media print{
-  body{background:#fff;padding:0}
-  header.top,.tabs,#painelDados,.noprint{display:none!important}
-  .grid{grid-template-columns:1fr}
-  .panel.off{display:block!important}
-  .sheet{border:0;padding:0}
+.hint{font-size:.74rem;color:var(--muted);margin:0}
+.viewer{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:12px;display:grid;gap:10px;min-width:0}
+.vbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between}
+.vbar span{font-size:.8rem;color:var(--muted)}
+.vscroll{overflow:auto;background:var(--soft);border-radius:8px;padding:10px}
+.stack{transform-origin:top left;display:grid;gap:16px;width:794px}
+.busy{position:fixed;inset:0;background:rgba(10,20,24,.55);display:grid;place-items:center;z-index:50;color:#fff;font:600 1rem var(--f-body)}
+
+/* ===================== Folha A4 (sempre clara, como papel) ===================== */
+.page{
+  --p-ink:#16232a; --p-muted:#5e6e74; --p-line:#cdd7da; --p-soft:#f1f5f6; --p-head:#0e5466; --p-bar:#1c2427;
+  --p-band:#cfe7da; --p-ok:#1d7a4c; --p-warn:#b26a00; --p-bad:#b3261e;
+  width:794px;height:1123px;background:#fff;color:var(--p-ink);padding:28px 32px 22px;
+  display:flex;flex-direction:column;gap:11px;font:11px/1.35 var(--f-body);box-shadow:0 1px 4px rgba(0,0,0,.18);overflow:hidden;position:relative
 }
-@media (prefers-reduced-motion:no-preference){.track .fill{transition:width .4s ease}}
+.page h2{font:800 19px/1.1 var(--f-display);letter-spacing:-.01em}
+.p-head{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;border-bottom:2.5px solid var(--p-ink);padding-bottom:8px}
+.p-head .sub{color:var(--p-muted);font-size:10px;margin-top:3px}
+.p-head .prof{text-align:right;font-size:11px}
+.p-head .prof b{display:block;font:700 13px var(--f-display);color:var(--p-head)}
+.p-id{display:grid;grid-template-columns:2.2fr 1fr .8fr .9fr 1.5fr;border:1px solid var(--p-line)}
+.p-id div{padding:5px 8px;border-right:1px solid var(--p-line)}
+.p-id div:last-child{border-right:0}
+.p-id span{display:block;font-size:8.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--p-muted)}
+.p-id b{font:600 12px var(--f-mono)}
+.p-cols{display:grid;grid-template-columns:minmax(0,1fr) 222px;gap:16px;flex:1;min-height:0}
+.p-col{display:flex;flex-direction:column;gap:11px;min-width:0}
+.p-sec{display:grid;gap:5px}
+.p-sec>h3{font:700 10.5px var(--f-display);text-transform:uppercase;letter-spacing:.07em;background:var(--p-head);color:#fff;padding:4px 8px;display:flex;justify-content:space-between;gap:8px}
+.p-sec>h3 small{font:400 9px var(--f-body);text-transform:none;letter-spacing:0;opacity:.85}
+.page table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}
+.page th,.page td{padding:4px 6px;border-bottom:1px solid var(--p-line);text-align:right;white-space:nowrap}
+.page th:first-child,.page td:first-child{text-align:left}
+.page thead th{font:600 8.5px var(--f-body);text-transform:uppercase;letter-spacing:.05em;color:var(--p-muted);background:var(--p-soft)}
+.page td.n{font:600 11.5px var(--f-mono)}
+.page td.r{font:400 9.5px var(--f-mono);color:var(--p-muted)}
+.page td.tot{padding:4px 3px;text-align:center;vertical-align:middle;border-left:1px solid var(--p-line);font:700 13px var(--f-mono);background:var(--p-soft)}
+.page td.tot small{display:block;font:400 8.5px var(--f-mono);color:var(--p-muted)}
+.st{font:700 8.5px var(--f-body);text-transform:uppercase;letter-spacing:.04em}
+.st.ok{color:var(--p-ok)}.st.warn{color:var(--p-warn)}.st.bad{color:var(--p-bad)}.st.neu{color:var(--p-muted)}
+.bars{display:grid;gap:1px}
+.brow{display:grid;grid-template-columns:104px minmax(0,1fr);gap:8px;align-items:center}
+.brow .lab{font:600 10px/1.15 var(--f-body)}
+.brow .lab small{display:block;font-weight:400;color:var(--p-muted);font-size:8.5px}
+.zone{position:relative;height:13px;font:700 8px var(--f-body);text-transform:uppercase;letter-spacing:.06em;color:var(--p-muted)}
+.zone span{position:absolute;transform:translateX(-50%);top:1px}
+.scale{position:relative;height:12px;font:500 8px var(--f-mono);color:var(--p-muted)}
+.scale span{position:absolute;transform:translateX(-50%);top:0}
+.track{position:relative;height:17px;background:var(--p-soft)}
+.track .band{position:absolute;top:0;bottom:0;background:var(--p-band)}
+.track .tick{position:absolute;top:0;bottom:0;width:1px;background:#fff}
+.track .fill{position:absolute;left:0;top:4px;height:9px;background:var(--p-bar)}
+.track .val{position:absolute;top:1px;font:700 10.5px var(--f-mono);color:var(--p-ink);white-space:nowrap}
+.box{border:1px solid var(--p-line);padding:8px;display:grid;gap:6px}
+.score{display:flex;align-items:baseline;gap:4px}
+.score b{font:800 40px/1 var(--f-display);color:var(--p-head)}
+.score span{font:500 12px var(--f-mono);color:var(--p-muted)}
+.kv{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:3px 8px;margin:0}
+.kv dt{color:var(--p-muted)}
+.kv dd{margin:0;text-align:right;font:600 10.5px var(--f-mono)}
+.kv dd .st{margin-left:4px}
+.mini{position:relative;height:10px;background:var(--p-soft);margin-top:2px}
+.mini i{position:absolute;top:0;bottom:0}
+.mini .mk{position:absolute;top:-3px;width:3px;height:16px;background:var(--p-ink)}
+.mini-s{display:flex;justify-content:space-between;font:500 8px var(--f-mono);color:var(--p-muted)}
+.imp th,.imp td{padding:3px 4px;font-size:9.5px}
+.imp td{font-family:var(--f-mono)}
+.shape{display:flex;gap:8px;align-items:center}
+.shape .g{font:800 26px/1 var(--f-display);width:38px;height:38px;display:grid;place-items:center;border:2px solid var(--p-ink);flex:none}
+.shape p{margin:0;font-size:9.5px}
+.notes{margin:0;padding-left:15px;display:grid;gap:3px;font-size:10.5px}
+.p-foot{font-size:8.5px;color:var(--p-muted);border-top:1px solid var(--p-line);padding-top:6px;display:flex;justify-content:space-between;gap:12px;margin-top:auto}
+.est{color:var(--p-head);font-weight:700}
+.segfig{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.segfig .c{border:1px solid var(--p-line);padding:6px;text-align:center;font-size:9px;color:var(--p-muted)}
+.segfig .c b{display:block;font:700 13px var(--f-mono);color:var(--p-ink)}
+.segfig .c.tr{grid-row:span 2;display:grid;align-content:center;background:var(--p-soft)}
+.two-p{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.hist td.up{color:var(--p-bad)}.hist td.down{color:var(--p-ok)}
+.gloss{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 16px;font-size:10px;margin:0}
+.gloss dt{font-weight:700}
+.gloss dd{margin:0 0 4px;color:var(--p-muted)}
+.exbadge{position:absolute;top:10px;right:32px;font:700 9px var(--f-body);color:var(--p-warn);border:1px solid var(--p-warn);padding:1px 6px;text-transform:uppercase;letter-spacing:.06em}
+@media (prefers-reduced-motion:no-preference){.btn{transition:opacity .2s}}
 </style>
 </head>
 <body>
@@ -143,36 +168,58 @@ td.del{white-space:nowrap}
   <header class="top">
     <div>
       <h1>Laudo <span>Corporal</span></h1>
-      <p>Transforma os números da sua balança de bioimpedância num laudo completo.</p>
+      <p>Importe o PDF da bioimpedância, confira os dados e exporte o laudo do paciente.</p>
     </div>
   </header>
 
+  <div class="actions">
+    <label class="drop" id="drop" for="arquivo">
+      <input id="arquivo" type="file" accept="application/pdf,.pdf">
+      <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true" style="color:var(--accent)"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M12 17v-6m-3 3 3-3 3 3"/></svg>
+      <div><b>Importar laudo em PDF</b><small>Toque ou arraste o arquivo. A leitura acontece no seu aparelho; nada é enviado.</small></div>
+    </label>
+    <button class="btn" type="button" id="exportar">Exportar PDF do paciente</button>
+  </div>
+  <div class="msg" id="msg" role="status"></div>
+
   <nav class="tabs" role="tablist" aria-label="Seções">
-    <button id="tabDados" role="tab" aria-selected="false" data-panel="painelDados">Dados</button>
+    <button id="tabDados" role="tab" aria-selected="false" data-panel="painelDados">Conferir dados</button>
     <button id="tabLaudo" role="tab" aria-selected="true" data-panel="painelLaudo">Laudo</button>
-    <button id="tabHist" role="tab" aria-selected="false" data-panel="painelHist">Histórico</button>
   </nav>
 
   <div class="grid">
     <div class="panel off" id="painelDados">
       <form class="card" id="form" autocomplete="off">
         <fieldset>
-          <legend>Identificação</legend>
-          <label>Nome<input id="nome" type="text" placeholder="Seu nome"></label>
+          <legend>Profissional</legend>
           <div class="row">
-            <label>Data da medição<input id="data" type="date"></label>
-            <label>Sexo<select id="sexo"><option value="M">Masculino</option><option value="F">Feminino</option></select></label>
+            <label>Nome no cabeçalho<input id="prof" type="text" placeholder="Dr(a). Nome"></label>
+            <label>Local / registro<input id="local" type="text" placeholder="Cidade - UF · CRM"></label>
           </div>
-          <div class="row3">
+        </fieldset>
+        <fieldset>
+          <legend>Paciente</legend>
+          <label>Nome<input id="nome" type="text"></label>
+          <div class="row">
+            <label>Data<input id="data" type="date"></label>
+            <label>Hora<input id="hora" type="time" step="1"></label>
+          </div>
+          <div class="row">
+            <label>Sexo<select id="sexo"><option value="M">Masculino</option><option value="F">Feminino</option></select></label>
             <label>Idade<input id="idade" type="number" inputmode="decimal" step="1"></label>
+          </div>
+          <div class="row">
             <label>Altura (cm)<input id="altura" type="number" inputmode="decimal" step="0.1"></label>
             <label>Peso (kg)<input id="peso" type="number" inputmode="decimal" step="0.1"></label>
           </div>
         </fieldset>
-
         <fieldset>
-          <legend>O que o seu laudo traz</legend>
-          <label>Gordura corporal (%) *<input id="gord" type="number" inputmode="decimal" step="0.1"></label>
+          <legend>Composição</legend>
+          <div class="row">
+            <label>Gordura corporal (%) *<input id="gord" type="number" inputmode="decimal" step="0.1"></label>
+            <label>Massa magra (kg)<input id="slm" type="number" inputmode="decimal" step="0.1" placeholder="vazio = calcular"></label>
+          </div>
+          <p class="hint">Massa magra = água + proteína, sem minerais. Na Avanutri aparece como "Massa Livre de Gordura".</p>
           <div class="row">
             <label>Músculo<input id="musc" type="number" inputmode="decimal" step="0.1" placeholder="vazio = estimar"></label>
             <label>Esse número é…<select id="muscTipo">
@@ -182,165 +229,160 @@ td.del{white-space:nowrap}
               <option value="tot_pct">Massa muscular total (%)</option>
             </select></label>
           </div>
-          <p class="hint">Balanças tipo Omron dão "músculo esquelético %". Tanita, Xiaomi e similares dão "massa muscular" total, que inclui músculo liso e órgãos.</p>
           <div class="row">
-            <label>Água corporal (%)<input id="agua" type="number" inputmode="decimal" step="0.1"></label>
-            <label>Massa óssea (kg)<input id="osso" type="number" inputmode="decimal" step="0.1"></label>
+            <label>Água corporal<input id="agua" type="number" inputmode="decimal" step="0.1"></label>
+            <label>Unidade<select id="aguaUn"><option value="L">Litros</option><option value="pct">% do peso</option></select></label>
+          </div>
+          <div class="row">
+            <label>Proteína (kg)<input id="prot" type="number" inputmode="decimal" step="0.1" placeholder="vazio = calcular"></label>
+            <label>Minerais (kg)<input id="mine" type="number" inputmode="decimal" step="0.01" placeholder="vazio = estimar"></label>
           </div>
           <div class="row">
             <label>Gordura visceral (nível)<input id="visc" type="number" inputmode="decimal" step="0.5"></label>
             <label>Metab. basal (kcal)<input id="tmb" type="number" inputmode="decimal" step="1" placeholder="vazio = calcular"></label>
           </div>
           <div class="row">
+            <label>Índ. apendicular (kg/m²)<input id="asmi" type="number" inputmode="decimal" step="0.01"></label>
+            <label>Idade metabólica<input id="idadeMet" type="number" inputmode="decimal" step="1"></label>
+          </div>
+          <div class="row">
             <label>Cintura (cm)<input id="cintura" type="number" inputmode="decimal" step="0.1"></label>
             <label>Quadril (cm)<input id="quadril" type="number" inputmode="decimal" step="0.1"></label>
           </div>
         </fieldset>
-
-        <details id="segDetails">
-          <summary>Segmentar (se o aparelho mede)</summary>
+        <details id="segDetails" open>
+          <summary>Segmentar</summary>
           <fieldset>
-            <p class="hint">Músculo em kg por segmento. Gordura em % (deixe vazio o que não tiver).</p>
+            <p class="hint">Massa magra e gordura em kg por segmento.</p>
             <div class="row3">
-              <label>Braço D kg<input id="m_bd" type="number" inputmode="decimal" step="0.01"></label>
-              <label>Braço E kg<input id="m_be" type="number" inputmode="decimal" step="0.01"></label>
-              <label>Tronco kg<input id="m_tr" type="number" inputmode="decimal" step="0.01"></label>
-              <label>Perna D kg<input id="m_pd" type="number" inputmode="decimal" step="0.01"></label>
-              <label>Perna E kg<input id="m_pe" type="number" inputmode="decimal" step="0.01"></label>
+              <label>Magra braço D<input id="m_bd" type="number" inputmode="decimal" step="0.1"></label>
+              <label>Magra braço E<input id="m_be" type="number" inputmode="decimal" step="0.1"></label>
+              <label>Magra tronco<input id="m_tr" type="number" inputmode="decimal" step="0.1"></label>
+              <label>Magra perna D<input id="m_pd" type="number" inputmode="decimal" step="0.1"></label>
+              <label>Magra perna E<input id="m_pe" type="number" inputmode="decimal" step="0.1"></label>
             </div>
             <div class="row3">
-              <label>Braço D gord %<input id="g_bd" type="number" inputmode="decimal" step="0.1"></label>
-              <label>Braço E gord %<input id="g_be" type="number" inputmode="decimal" step="0.1"></label>
-              <label>Tronco gord %<input id="g_tr" type="number" inputmode="decimal" step="0.1"></label>
-              <label>Perna D gord %<input id="g_pd" type="number" inputmode="decimal" step="0.1"></label>
-              <label>Perna E gord %<input id="g_pe" type="number" inputmode="decimal" step="0.1"></label>
+              <label>Gord. braço D<input id="g_bd" type="number" inputmode="decimal" step="0.1"></label>
+              <label>Gord. braço E<input id="g_be" type="number" inputmode="decimal" step="0.1"></label>
+              <label>Gord. tronco<input id="g_tr" type="number" inputmode="decimal" step="0.1"></label>
+              <label>Gord. perna D<input id="g_pd" type="number" inputmode="decimal" step="0.1"></label>
+              <label>Gord. perna E<input id="g_pe" type="number" inputmode="decimal" step="0.1"></label>
             </div>
           </fieldset>
         </details>
-
-        <div class="btns">
-          <button class="btn" type="submit" id="salvar">Salvar medição</button>
-          <button class="btn ghost" type="button" id="limpar">Limpar campos</button>
-        </div>
-        <p class="toast" id="toast" role="status"></p>
+        <div><button class="btn ghost small" type="button" id="limpar">Novo paciente (limpar)</button></div>
       </form>
     </div>
 
     <div class="panel" id="painelLaudo">
-      <article class="sheet" id="laudo"></article>
-    </div>
-
-    <div class="panel off" id="painelHist" style="grid-column:1/-1">
-      <article class="sheet">
-        <section class="blk">
-          <h3>Histórico <small>medições salvas neste navegador</small></h3>
-          <div id="hist"></div>
-        </section>
-        <section class="blk noprint">
-          <h3>Backup <small>leve seus dados para outro aparelho</small></h3>
-          <div class="btns">
-            <button class="btn ghost small" type="button" id="copiarBk">Copiar backup</button>
-            <button class="btn ghost small" type="button" id="importarBk">Importar do campo abaixo</button>
-          </div>
-          <label>Backup (JSON)<textarea id="bk" rows="4" placeholder="Cole aqui um backup para importar"></textarea></label>
-          <p class="toast" id="toastBk" role="status"></p>
-        </section>
-      </article>
+      <div class="viewer">
+        <div class="vbar"><span id="vinfo">Pré-visualização · A4</span><button class="btn ghost small" type="button" id="zoom">Ver em 100%</button></div>
+        <div class="vscroll" id="vscroll"><div id="stackWrap"><div class="stack" id="stack"></div></div></div>
+      </div>
     </div>
   </div>
 </div>
+<div class="busy" id="busy" hidden>Gerando PDF…</div>
 
 <script>
 (() => {
   const $ = id => document.getElementById(id);
-  const FIELDS = ["nome","data","sexo","idade","altura","peso","gord","musc","muscTipo","agua","osso","visc","tmb","cintura","quadril",
+  const FIELDS = ["prof","local","nome","data","hora","sexo","idade","altura","peso","gord","slm","musc","muscTipo","agua","aguaUn","prot","mine","visc","tmb","asmi","idadeMet","cintura","quadril",
     "m_bd","m_be","m_tr","m_pd","m_pe","g_bd","g_be","g_tr","g_pd","g_pe"];
-  const TEXT = new Set(["nome","data","sexo","muscTipo"]);
-  const EXEMPLO = {nome:"Exemplo",data:new Date().toISOString().slice(0,10),sexo:"M",idade:"38",altura:"176",peso:"84.6",gord:"26.4",
-    musc:"33.1",muscTipo:"esq_pct",agua:"52.1",osso:"",visc:"11",tmb:"",cintura:"95",quadril:"101",
-    m_bd:"",m_be:"",m_tr:"",m_pd:"",m_pe:"",g_bd:"",g_be:"",g_tr:"",g_pd:"",g_pe:""};
-  const KEY_HIST = "laudoCorporal.hist", KEY_DRAFT = "laudoCorporal.draft";
+  const SEGS = ["bd","be","tr","pd","pe"], SEGN = {bd:"Braço direito",be:"Braço esquerdo",tr:"Tronco",pd:"Perna direita",pe:"Perna esquerda"};
+  const EXEMPLO = {prof:"",local:"",nome:"Paciente Exemplo",data:new Date().toISOString().slice(0,10),hora:"08:30:00",sexo:"M",idade:"41",altura:"172",peso:"81.3",gord:"24.8",slm:"57.1",
+    musc:"",muscTipo:"esq_kg",agua:"44.6",aguaUn:"L",prot:"",mine:"",visc:"9",tmb:"",asmi:"8.9",idadeMet:"44",cintura:"",quadril:"",
+    m_bd:"3.3",m_be:"3.2",m_tr:"28.1",m_pd:"9.9",m_pe:"9.6",g_bd:"0.9",g_be:"0.9",g_tr:"13.8",g_pd:"1.6",g_pe:"1.7"};
+  const KEY_PROF = "laudoCorporal.prof";
+  let extra = {};          // dados importados que não estão no formulário (faixas do aparelho, histórico, impedâncias)
+  let isExample = true;
+  let zoom100 = false;
 
   const store = {
     get(k, d){ try{ const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; }catch(e){ return d; } },
-    set(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); return true; }catch(e){ return false; } }
+    set(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
   };
-  const num = v => { if (v === undefined || v === null) return NaN; const n = parseFloat(String(v).replace(",", ".")); return isFinite(n) ? n : NaN; };
-  const has = v => isFinite(v);
+  const num = v => { if (v === undefined || v === null || v === "") return NaN; const n = parseFloat(String(v).replace(",", ".")); return isFinite(n) ? n : NaN; };
+  const br = s => parseFloat(String(s).replace(/\.(?=\d{3}(\D|$))/g, "").replace(",", "."));
+  const has = v => typeof v === "number" && isFinite(v);
   const f = (v, d = 1) => has(v) ? v.toLocaleString("pt-BR", {minimumFractionDigits:d, maximumFractionDigits:d}) : "—";
-  const sgn = (v, d = 1) => has(v) ? (v > 0 ? "+" : v < 0 ? "−" : "") + f(Math.abs(v), d) : "—";
+  const sgn = (v, d = 1) => has(v) ? (v > 0.0499 ? "+" : v < -0.0499 ? "−" : "") + f(Math.abs(v), d) : "—";
   const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+  const dBR = iso => iso ? iso.split("-").reverse().join("/") : "—";
 
   function readForm(){ const d = {}; FIELDS.forEach(k => d[k] = $(k).value); return d; }
-  function fillForm(d){ FIELDS.forEach(k => { if (d[k] !== undefined) $(k).value = d[k]; }); }
+  function fillForm(d){ FIELDS.forEach(k => { if (d[k] !== undefined && d[k] !== null) $(k).value = d[k]; }); }
 
-  // ---------- cálculos ----------
+  // ================= cálculos =================
   function compute(d){
     const M = d.sexo !== "F";
-    const H = num(d.altura) / 100, W = num(d.peso), pbf = num(d.gord), age = num(d.idade);
-    if (!(H > 1 && W > 20 && pbf > 2 && pbf < 70)) return null;
-    const r = {M, H, W, pbf, age, est:{}};
+    const H = num(d.altura) / 100, W = num(d.peso), pbf = num(d.gord);
+    if (!(H > 1 && W > 20 && pbf > 1 && pbf < 75)) return null;
+    const dev = extra.rng || {};
+    const r = {M, H, W, pbf, age:num(d.idade), est:{}, dev:!!extra.rng};
     r.bmi = W / (H*H);
     r.fm = W * pbf / 100;
     r.ffm = W - r.fm;
-    // água
-    const agua = num(d.agua);
-    if (has(agua) && agua > 20 && agua < 80) r.tbw = W * agua / 100; else { r.tbw = r.ffm * 0.732; r.est.tbw = true; }
-    // minerais
-    const osso = num(d.osso);
-    if (has(osso) && osso > 0.5) r.min = osso * 1.22; else { r.min = r.ffm * 0.068; r.est.min = true; }
-    // proteína = resto da massa magra
-    r.prot = r.ffm - r.tbw - r.min;
-    if (r.prot < r.ffm * 0.12 || r.prot > r.ffm * 0.30) { r.tbw = r.ffm*0.732; r.min = r.ffm*0.068; r.prot = r.ffm - r.tbw - r.min; r.est.tbw = r.est.min = true; r.est.incoerente = true; }
-    r.est.prot = true;
-    // músculo esquelético
+    const hist = (extra.hist || []).filter(h => has(h.SLM));
+    const last = hist[hist.length - 1];
+
+    // peso = gordura + minerais + massa magra (água + proteína)
+    const sl = num(d.slm), mn = num(d.mine);
+    if (has(sl) && sl > 0 && (r.ffm - sl) > r.ffm*0.03 && (r.ffm - sl) < r.ffm*0.10){ r.slm = sl; r.min = r.ffm - sl; }
+    else if (has(mn) && mn > 0){ r.min = mn; r.slm = r.ffm - mn; }
+    else { r.min = r.ffm * 0.068; r.slm = r.ffm - r.min; r.est.min = r.est.slm = 1; if (has(sl) && sl > 0) r.incoerente = true; }
+    const ag = num(d.agua);
+    if (has(ag) && ag > 0) r.tbw = d.aguaUn === "pct" ? W * ag / 100 : ag;
+    else { r.tbw = r.ffm * 0.732; r.est.tbw = 1; }
+    const pr = num(d.prot);
+    if (has(pr) && pr > 0) r.prot = pr; else { r.prot = r.slm - r.tbw; r.est.prot = 1; }
+    if (r.prot < r.ffm*0.1 || r.prot > r.ffm*0.32){ r.tbw = r.slm*0.78; r.prot = r.slm - r.tbw; r.est.tbw = r.est.prot = 1; r.incoerente = true; }
+
     const mv = num(d.musc);
     if (has(mv) && mv > 0){
-      switch (d.muscTipo){
-        case "esq_kg": r.smm = mv; break;
-        case "esq_pct": r.smm = W * mv / 100; break;
-        case "tot_kg": r.smm = mv * 0.60; r.est.smm = true; break;
-        case "tot_pct": r.smm = W * mv / 100 * 0.60; r.est.smm = true; break;
-      }
-    } else { r.smm = r.ffm * (M ? 0.567 : 0.53); r.est.smm = true; }
-    // padrões (IMC 22 como peso padrão)
-    r.stdW = 22 * H * H;
-    r.stdFM = r.stdW * (M ? 0.15 : 0.23);
-    r.stdFFM = r.stdW - r.stdFM;
+      r.smm = {esq_kg:mv, esq_pct:W*mv/100, tot_kg:mv*0.6, tot_pct:W*mv/100*0.6}[d.muscTipo] ?? mv;
+      if (d.muscTipo.startsWith("tot")) r.est.smm = 1;
+    } else if (last && has(last.SMM)) { r.smm = r.slm * last.SMM / last.SLM; r.est.smm = 1; r.smmHist = true; }
+    else { r.smm = r.ffm * (M ? 0.567 : 0.53); r.est.smm = 1; }
+
+    // padrões: faixas do aparelho quando importadas; senão IMC 22
+    const mid = t => t && t.length === 11 ? [t[2], t[3], t[4]] : null;
+    const dW = mid(dev.W), dFM = mid(dev.FM), dSLM = mid(dev.SLM), dTBW = mid(dev.TBW), dBMI = mid(dev.BMI), dPBF = mid(dev.PBF);
+    r.stdW = dW ? dW[1] : 22*H*H;
+    r.stdFM = dFM ? dFM[1] : r.stdW * (M ? 0.15 : 0.23);
+    r.stdFFM = dSLM ? dSLM[1] / 0.932 : r.stdW - r.stdFM;
+    r.stdSLM = dSLM ? dSLM[1] : r.stdFFM * 0.932;
     r.stdSMM = r.stdW * (M ? 0.497 : 0.41);
-    r.pW = W / r.stdW * 100; r.pSMM = r.smm / r.stdSMM * 100; r.pFM = r.fm / r.stdFM * 100;
-    // TMB
-    const tmb = num(d.tmb);
-    r.bmr = has(tmb) && tmb > 500 ? tmb : 370 + 21.6 * r.ffm; r.est.bmr = !(has(tmb) && tmb > 500);
-    // controle de peso
-    r.fatCtrl = r.fm > r.stdFM ? -(r.fm - r.stdFM) : (r.fm < r.stdFM*0.8 ? r.stdFM*0.8 - r.fm : 0);
-    r.muscCtrl = r.smm < r.stdSMM ? (r.stdSMM - r.smm) : 0;
-    r.target = W + r.fatCtrl + r.muscCtrl / 0.567;
-    // pontuação estimada (80 = composição no padrão)
-    r.score = Math.round(Math.max(0, Math.min(100,
-      80 - Math.max(0, r.fm - r.stdFM) - Math.max(0, r.stdFM*0.8 - r.fm)
-         + Math.min(10, Math.max(0, r.smm - r.stdSMM)) - Math.max(0, r.stdSMM - r.smm) * 1.5)));
-    // perfil C / I / D
-    const dW = r.pW - 100, dS = r.pSMM - 100, dF = r.pFM - 100;
-    if (r.pSMM < 95 && r.pFM > 120) r.shape = "C";
-    else if (r.pSMM >= 105 && r.pSMM > r.pW && r.pFM <= 120) r.shape = "D";
-    else r.shape = "I";
-    // obesidade / RCQ / visceral
-    r.whr = num(d.cintura) / num(d.quadril);
-    r.waist = num(d.cintura);
-    r.visc = num(d.visc);
-    // ranges
     r.rng = {
-      W:[r.stdW*0.85, r.stdW*1.15], SMM:[r.stdSMM*0.9, r.stdSMM*1.1], FM:[r.stdFM*0.8, r.stdFM*1.6],
-      TBW:[r.stdFFM*0.732*0.9, r.stdFFM*0.732*1.1], PROT:[r.stdFFM*0.2*0.9, r.stdFFM*0.2*1.1],
-      MIN:[r.stdFFM*0.068*0.9, r.stdFFM*0.068*1.1], FFM:[r.stdFFM*0.9, r.stdFFM*1.1],
-      BMI:[18.5, 25], PBF: M ? [10, 20] : [18, 28]
+      W: dW ? [dW[0], dW[2]] : [r.stdW*0.85, r.stdW*1.15],
+      FM: dFM ? [dFM[0], dFM[2]] : [r.stdFM*0.8, r.stdFM*1.6],
+      FFM: [r.stdFFM*0.9, r.stdFFM*1.1],
+      SLM: dSLM ? [dSLM[0], dSLM[2]] : [r.stdSLM*0.9, r.stdSLM*1.1],
+      TBW: dTBW ? [dTBW[0], dTBW[2]] : [r.stdFFM*0.732*0.9, r.stdFFM*0.732*1.1],
+      PROT: [r.stdFFM*0.195*0.9, r.stdFFM*0.195*1.1],
+      MIN: [r.stdFFM*0.068*0.9, r.stdFFM*0.068*1.1],
+      SMM: [r.stdSMM*0.9, r.stdSMM*1.1],
+      BMI: dBMI ? [dBMI[0], dBMI[2]] : [18.5, 25],
+      PBF: dPBF ? [dPBF[0], dPBF[2]] : (M ? [10, 20] : [18, 28])
     };
+    r.pW = W / r.stdW * 100; r.pSMM = r.smm / r.stdSMM * 100; r.pFM = r.fm / r.stdFM * 100;
+    const tmb = num(d.tmb);
+    r.bmr = has(tmb) && tmb > 500 ? tmb : 370 + 21.6 * r.ffm; if (!(has(tmb) && tmb > 500)) r.est.bmr = 1;
+    r.fatCtrl = r.fm > r.stdFM ? -(r.fm - r.stdFM) : (r.fm < r.rng.FM[0] ? r.rng.FM[0] - r.fm : 0);
+    r.muscCtrl = r.smm < r.stdSMM ? r.stdSMM - r.smm : 0;
+    r.target = W + r.fatCtrl + r.muscCtrl / 0.567;
+    r.score = Math.round(Math.max(0, Math.min(100,
+      80 - Math.max(0, r.fm - r.stdFM) - Math.max(0, r.rng.FM[0] - r.fm)
+         + Math.min(10, Math.max(0, r.smm - r.stdSMM)) - Math.max(0, r.stdSMM - r.smm) * 1.5)));
+    r.shape = (r.pSMM < 95 && r.pFM > 120) ? "C" : (r.pSMM >= 105 && r.pSMM > r.pW && r.pFM <= 140) ? "D" : "I";
+    r.whr = num(d.cintura) / num(d.quadril); r.waist = num(d.cintura);
+    r.visc = num(d.visc); r.asmi = num(d.asmi); r.metAge = num(d.idadeMet);
+    r.ffmi = r.ffm / (H*H);
     // segmentar
-    const segs = ["bd","be","tr","pd","pe"];
-    r.segM = {}; r.segG = {};
-    segs.forEach(s => { r.segM[s] = num(d["m_"+s]); r.segG[s] = num(d["g_"+s]); });
-    r.hasSeg = segs.some(s => has(r.segM[s]) || has(r.segG[s]));
+    const frac = M ? {bd:.062,be:.062,tr:.50,pd:.188,pe:.188} : {bd:.052,be:.052,tr:.52,pd:.188,pe:.188};
+    r.segM = {}; r.segG = {}; r.segStd = {};
+    SEGS.forEach(s => { r.segM[s] = num(d["m_"+s]); r.segG[s] = num(d["g_"+s]); r.segStd[s] = r.stdSLM * frac[s]; });
+    r.hasSegM = SEGS.some(s => has(r.segM[s])); r.hasSegG = SEGS.some(s => has(r.segG[s]));
     return r;
   }
 
@@ -350,256 +392,493 @@ td.del{white-space:nowrap}
     if (v > hi) return ["bad","Acima"];
     return ["ok","Normal"];
   }
-  const pill = ([c, t]) => `<span class="pill ${c}">${t}</span>`;
+  const st = ([c, t]) => `<span class="st ${c}">${t}</span>`;
 
-  // régua com marcas equidistantes (escala por partes)
+  // régua: marcas equidistantes, escala por partes (como nos laudos clínicos)
   function pos(v, ticks){
     if (v <= ticks[0]) return 0;
     const n = ticks.length - 1;
     for (let i = 0; i < n; i++) if (v <= ticks[i+1]) return (i + (v - ticks[i]) / (ticks[i+1] - ticks[i])) / n;
     return 1;
   }
-  function scaleRow(ticks, fmt = v => v){
-    return `<div class="brow"><div></div><div class="scale">${ticks.map((t,i) =>
-      `<span class="${i%2 ? "alt" : ""}" style="left:${pos(t,ticks)*100}%">${fmt(t)}</span>`).join("")}</div></div>`;
+  const TRACK = 360; // largura útil da régua na folha (px)
+  function zoneRow(ticks, lo, hi){
+    const a = pos(lo,ticks), b = pos(hi,ticks);
+    return `<div class="brow"><div></div><div class="zone"><span style="left:${a/2*100}%">Abaixo</span><span style="left:${(a+b)/2*100}%">Normal</span><span style="left:${(b+1)/2*100}%">Acima</span></div></div>`;
+  }
+  function scaleRow(ticks, fmt = v => String(v).replace(".", ",")){
+    return `<div class="brow"><div></div><div class="scale">${ticks.map(t => `<span style="left:${pos(t,ticks)*100}%">${fmt(t)}</span>`).join("")}</div></div>`;
   }
   function barRow(label, sub, value, ticks, lo, hi, text){
     const p = pos(value, ticks);
-    const tickHtml = ticks.slice(1,-1).map(t => `<i class="tick" style="left:${pos(t,ticks)*100}%"></i>`).join("");
-    const valLeft = p > 0.78 ? `right:${(1-p)*100 + 1}%;` : `left:calc(${p*100}% + 6px);`;
+    const tk = ticks.slice(1,-1).map(t => `<i class="tick" style="left:${pos(t,ticks)*100}%"></i>`).join("");
+    const inside = p > 0.8;
+    const vs = inside ? `right:${(1-p)*100+1}%;color:#fff` : `left:calc(${p*100}% + 5px)`;
     return `<div class="brow"><div class="lab">${label}${sub ? `<small>${sub}</small>` : ""}</div>
-      <div class="track"><i class="band" style="left:${pos(lo,ticks)*100}%;width:${(pos(hi,ticks)-pos(lo,ticks))*100}%"></i>${tickHtml}
-      <i class="fill" style="width:${Math.max(0.01,p)*100}%"></i><span class="val" style="${valLeft}${p>0.78?"color:var(--accent-ink);top:3px;font-size:.72rem":""}">${text}</span></div></div>`;
+      <div class="track"><i class="band" style="left:${pos(lo,ticks)*100}%;width:${(pos(hi,ticks)-pos(lo,ticks))*100}%"></i>${tk}
+      <i class="fill" style="width:${Math.max(0.01,p)*100}%"></i><span class="val" style="${vs}">${text}</span></div></div>`;
   }
 
-  // ---------- render ----------
+  // ================= render =================
   function render(){
     const d = readForm();
-    store.set(KEY_DRAFT, d);
+    store.set(KEY_PROF, {prof:d.prof, local:d.local});
     const r = compute(d);
-    const el = $("laudo");
+    const stack = $("stack");
     if (!r){
-      el.innerHTML = `<section class="blk"><h3>Faltam dados</h3><p>Preencha altura, peso e % de gordura para gerar o laudo.</p></section>`;
-      return;
+      stack.innerHTML = `<div class="page"><h2>Faltam dados</h2><p>Importe um PDF ou preencha altura, peso e % de gordura em "Conferir dados".</p></div>`;
+      fit(); return;
     }
-    const isEx = d.nome === "Exemplo";
-    const est = k => r.est[k] ? ` <span title="valor estimado">*</span>` : "";
-    const dataBR = d.data ? new Date(d.data + "T12:00").toLocaleDateString("pt-BR") : "—";
+    const E = k => r.est[k] ? `<span class="est">*</span>` : "";
+    const head = (sub) => `
+      <div class="p-head">
+        <div><h2>Laudo de Composição Corporal</h2><div class="sub">${sub}</div></div>
+        <div class="prof"><b>${esc(d.prof || "Profissional responsável")}</b>${esc(d.local || "")}</div>
+      </div>
+      <div class="p-id">
+        <div><span>Paciente</span><b>${esc(d.nome || "—")}</b></div>
+        <div><span>Altura</span><b>${f(r.H*100,0)} cm</b></div>
+        <div><span>Idade</span><b>${has(r.age) ? f(r.age,0) : "—"}</b></div>
+        <div><span>Sexo</span><b>${r.M ? "Masculino" : "Feminino"}</b></div>
+        <div><span>Data / hora</span><b>${dBR(d.data)} ${esc((d.hora||"").slice(0,5))}</b></div>
+      </div>`;
+    const ex = isExample ? `<div class="exbadge">Exemplo</div>` : "";
+    const devNote = r.dev ? "Faixas de normalidade do próprio aparelho" : "Faixas calculadas para IMC 22 na sua altura";
 
+    // escalas
     const T_W = [55,70,85,100,115,130,145,160,175,190,205];
     const T_S = [70,80,90,100,110,120,130,140,150,160,170];
     const T_F = [40,60,80,100,160,220,280,340,400,460,520];
-    const T_BMI = [10,15,18.5,21,25,30,35,40,45,50,55];
+    const T_BMI = [10,15,18.5,22,25,30,35,40,45,50,55];
     const T_PBF = r.M ? [0,5,10,15,20,25,30,35,40,45,50] : [8,13,18,23,28,33,38,43,48,53,58];
+    const T_SEG = [40,55,70,85,100,115,130,145,160];
+    const pr = (v, s) => v / s * 100;
 
-    const shapeTxt = {
-      C:"Músculo abaixo do padrão e gordura acima. Prioridade: ganhar músculo e reduzir gordura.",
-      I:"Peso, músculo e gordura em proporção parecida. Ajuste fino conforme o objetivo.",
-      D:"Músculo acima do padrão com gordura controlada. Perfil atlético."
-    }[r.shape];
-
+    // avaliações
     const bmiCls = r.bmi < 18.5 ? "Baixo peso" : r.bmi < 25 ? "Eutrófico" : r.bmi < 30 ? "Sobrepeso" : r.bmi < 35 ? "Obesidade I" : r.bmi < 40 ? "Obesidade II" : "Obesidade III";
-    const whrLim = r.M ? 0.90 : 0.85, waistLim = r.M ? 94 : 80;
+    const shapeTxt = {C:"Músculo abaixo do padrão e gordura acima: priorizar ganho muscular e redução de gordura.",
+      I:"Peso, músculo e gordura em proporção semelhante.", D:"Músculo acima do padrão com gordura controlada: perfil atlético."}[r.shape];
+    const m = r.segM, g = r.segG;
+    let balUp = ["neu","—"], balLow = ["neu","—"], balUL = ["neu","—"];
+    const diff = (a,b) => Math.abs(a-b)/Math.min(a,b)*100;
+    if (has(m.bd) && has(m.be)) balUp = diff(m.bd,m.be) > 10 ? ["warn","Desequilíbrio"] : ["ok","Equilibrado"];
+    if (has(m.pd) && has(m.pe)) balLow = diff(m.pd,m.pe) > 10 ? ["warn","Desequilíbrio"] : ["ok","Equilibrado"];
+    if ([m.bd,m.be,m.pd,m.pe].every(has)){ const a = (pr(m.bd,r.segStd.bd)+pr(m.be,r.segStd.be))/2, l = (pr(m.pd,r.segStd.pd)+pr(m.pe,r.segStd.pe))/2;
+      balUL = Math.abs(a-l) > 10 ? ["warn", a > l ? "Inferior menor" : "Superior menor"] : ["ok","Equilibrado"]; }
 
-    let notes = [];
-    if (r.pFM > 160) notes.push("Massa de gordura bem acima do padrão para sua altura.");
-    if (r.pSMM < 90) notes.push("Músculo esquelético abaixo da faixa normal. Treino de força e proteína adequada ajudam.");
-    if (has(r.visc) && r.visc >= 10) notes.push(`Gordura visceral nível ${f(r.visc,0)}: acima de 9 indica risco metabólico aumentado.`);
-    if (has(r.whr) && r.whr > whrLim) notes.push(`Relação cintura-quadril ${f(r.whr,2)} acima de ${f(whrLim,2)} (OMS).`);
-    if (r.est.incoerente) notes.push("Água/ossos informados não fecham com a massa magra; usei estimativas padrão.");
-    if (!notes.length) notes.push("Nenhum ponto de atenção pelos critérios usados.");
+    const notes = [];
+    if (r.fm > r.rng.FM[1]) notes.push(`Massa de gordura ${f(r.fm)} kg, acima da faixa normal (${f(r.rng.FM[0])}–${f(r.rng.FM[1])} kg). Meta: reduzir ${f(r.fm - r.stdFM)} kg de gordura.`);
+    if (r.pbf > r.rng.PBF[1]) notes.push(`Percentual de gordura ${f(r.pbf)}% acima do recomendado (${f(r.rng.PBF[0],0)}–${f(r.rng.PBF[1],0)}%).`);
+    if (r.smm < r.rng.SMM[0]) notes.push("Músculo esquelético abaixo do padrão: treino de força e ingestão proteica adequada.");
+    else if (r.smm > r.rng.SMM[1]) notes.push(`Massa muscular esquelética acima do padrão (${f(r.pSMM,0)}% do esperado): boa reserva muscular.`);
+    if (has(r.visc)) notes.push(r.visc >= 10 ? `Gordura visceral nível ${f(r.visc,0)}: acima de 9, associada a maior risco cardiometabólico.` : `Gordura visceral nível ${f(r.visc,0)}, dentro do normal (até 9).`);
+    if (r.bmi >= 25 && r.pbf <= r.rng.PBF[1]) notes.push("IMC elevado com gordura normal: o excesso de peso vem de massa magra.");
+    if (balUp[0]==="warn" || balLow[0]==="warn") notes.push("Diferença entre lados acima de 10% em membros: avaliar dominância e assimetria de treino.");
+    if (r.incoerente) notes.push("Água/minerais informados não fecham com a massa magra; foram usadas estimativas padrão.");
 
-    // segmentar
-    let segHtml = "";
-    if (r.hasSeg){
-      const m = r.segM, g = r.segG;
-      const cell = (k, nome) => `<div class="seg ${k==="tr"?"tr":""}">${nome}<b>${has(m[k]) ? f(m[k],2)+" kg" : "—"}</b>${has(g[k]) ? `gord ${f(g[k],1)}%` : ""}</div>`;
-      const bal = [];
-      const cmp = (a, b, nome) => { if (has(a) && has(b) && Math.min(a,b) > 0){ const diff = Math.abs(a-b)/Math.min(a,b)*100; bal.push(`${nome}: diferença D×E de ${f(diff,1)}% ${diff > 10 ? pill(["warn","desequilíbrio"]) : pill(["ok","equilibrado"])}`); } };
-      cmp(m.bd, m.be, "Braços"); cmp(m.pd, m.pe, "Pernas");
-      if ([m.bd,m.be,m.pd,m.pe].every(has)){ const ratio = (m.bd+m.be)/(m.pd+m.pe); bal.push(`Superior/inferior: ${f(ratio,2)} ${ratio < 0.3 ? pill(["warn","membros superiores fracos"]) : ratio > 0.45 ? pill(["warn","membros inferiores fracos"]) : pill(["ok","proporcional"])}`); }
-      segHtml = `<section class="blk"><h3>Análise segmentar <small>massa magra por região</small></h3>
-        <div class="body">${cell("bd","Braço D")}${cell("tr","Tronco")}${cell("be","Braço E")}${cell("pd","Perna D")}<div></div>${cell("pe","Perna E")}</div>
-        ${bal.length ? `<ul class="notes">${bal.map(b=>`<li>${b}</li>`).join("")}</ul>` : ""}</section>`;
-    }
-
-    el.innerHTML = `
-      <div class="sheet-head">
-        <h2>Laudo de Composição Corporal</h2>
-        <div class="ident">
-          <div><span>Nome </span><b>${esc(d.nome || "—")}</b></div>
-          <div><span>Data </span><b>${dataBR}</b></div>
-          <div><span>Sexo </span><b>${r.M ? "M" : "F"}</b></div>
-          <div><span>Idade </span><b>${has(r.age) ? f(r.age,0) : "—"}</b></div>
-          <div><span>Altura </span><b>${f(r.H*100,0)} cm</b></div>
-        </div>
-      </div>
-      ${isEx ? `<div class="example">Dados de exemplo. Abra <b>Dados</b> e digite os números do seu laudo.</div>` : ""}
-
-      <div class="two">
-        <div style="display:grid;gap:22px;min-width:0;align-content:start">
-          <section class="blk">
-            <h3>Análise da composição corporal</h3>
-            <div class="scroll"><table>
-              <thead><tr><th>Componente</th><th>Valor (kg)</th><th>Faixa normal</th><th></th></tr></thead>
+    // ----- página 1 -----
+    const p1 = `<div class="page" id="pg1">${ex}${head(devNote)}
+      <div class="p-cols">
+        <div class="p-col">
+          <section class="p-sec"><h3>Análise da composição corporal <small>valores (faixa normal)</small></h3>
+            <table>
+              <thead><tr><th>Componente</th><th>Valor</th><th>Faixa</th><th></th><th style="text-align:center">Massa<br>magra</th><th style="text-align:center">Massa livre<br>de gordura</th><th style="text-align:center">Peso</th></tr></thead>
               <tbody>
-                <tr><td>Água corporal total${est("tbw")}</td><td class="num">${f(r.tbw)}</td><td class="rng">${f(r.rng.TBW[0])} – ${f(r.rng.TBW[1])}</td><td>${pill(status(r.tbw,...r.rng.TBW))}</td></tr>
-                <tr><td>Proteína${est("prot")}</td><td class="num">${f(r.prot)}</td><td class="rng">${f(r.rng.PROT[0])} – ${f(r.rng.PROT[1])}</td><td>${pill(status(r.prot,...r.rng.PROT))}</td></tr>
-                <tr><td>Minerais${est("min")}</td><td class="num">${f(r.min,2)}</td><td class="rng">${f(r.rng.MIN[0],2)} – ${f(r.rng.MIN[1],2)}</td><td>${pill(status(r.min,...r.rng.MIN))}</td></tr>
-                <tr><td>Massa de gordura</td><td class="num">${f(r.fm)}</td><td class="rng">${f(r.rng.FM[0])} – ${f(r.rng.FM[1])}</td><td>${pill(status(r.fm,...r.rng.FM))}</td></tr>
-                <tr><td><b>Massa livre de gordura</b></td><td class="num">${f(r.ffm)}</td><td class="rng">${f(r.rng.FFM[0])} – ${f(r.rng.FFM[1])}</td><td>${pill(status(r.ffm,...r.rng.FFM))}</td></tr>
-                <tr><td><b>Peso</b></td><td class="num">${f(r.W)}</td><td class="rng">${f(r.rng.W[0])} – ${f(r.rng.W[1])}</td><td>${pill(status(r.W,...r.rng.W))}</td></tr>
-              </tbody></table></div>
+                <tr><td>Água corporal (L) ${E("tbw")}</td><td class="n">${f(r.tbw)}</td><td class="r">${f(r.rng.TBW[0])}–${f(r.rng.TBW[1])}</td><td>${st(status(r.tbw,...r.rng.TBW))}</td>
+                  <td class="tot" rowspan="2">${f(r.slm)}${E("slm")}<small>${f(r.rng.SLM[0])}–${f(r.rng.SLM[1])}</small></td>
+                  <td class="tot" rowspan="3">${f(r.ffm)}<small>${f(r.rng.FFM[0])}–${f(r.rng.FFM[1])}</small></td>
+                  <td class="tot" rowspan="4">${f(r.W)}<small>${f(r.rng.W[0])}–${f(r.rng.W[1])}</small></td></tr>
+                <tr><td>Proteína (kg) ${E("prot")}</td><td class="n">${f(r.prot)}</td><td class="r">${f(r.rng.PROT[0])}–${f(r.rng.PROT[1])}</td><td>${st(status(r.prot,...r.rng.PROT))}</td></tr>
+                <tr><td>Minerais (kg) ${E("min")}</td><td class="n">${f(r.min,2)}</td><td class="r">${f(r.rng.MIN[0],2)}–${f(r.rng.MIN[1],2)}</td><td>${st(status(r.min,...r.rng.MIN))}</td><td class="tot" style="background:#fff"></td></tr>
+                <tr><td>Gordura (kg)</td><td class="n">${f(r.fm)}</td><td class="r">${f(r.rng.FM[0])}–${f(r.rng.FM[1])}</td><td>${st(status(r.fm,...r.rng.FM))}</td><td class="tot" style="background:#fff"></td><td class="tot" style="background:#fff"></td></tr>
+              </tbody>
+            </table>
           </section>
 
-          <section class="blk">
-            <h3>Análise músculo-gordura <small>% do padrão para sua altura · faixa verde = normal</small></h3>
+          <section class="p-sec"><h3>Análise músculo-gordura <small>% do padrão</small></h3>
             <div class="bars">
-              ${scaleRow(T_W)}
-              ${barRow("Peso","kg",r.pW,T_W,85,115,f(r.W))}
-              ${scaleRow(T_S)}
-              ${barRow("Músc. esquelético"+est("smm"),"kg",r.pSMM,T_S,90,110,f(r.smm))}
-              ${scaleRow(T_F)}
-              ${barRow("Massa de gordura","kg",r.pFM,T_F,80,160,f(r.fm))}
+              ${zoneRow(T_W, 100*r.rng.W[0]/r.stdW, 100*r.rng.W[1]/r.stdW)}
+              ${scaleRow(T_W)}${barRow("Peso","kg",r.pW,T_W,100*r.rng.W[0]/r.stdW,100*r.rng.W[1]/r.stdW,f(r.W))}
+              ${scaleRow(T_S)}${barRow("Massa muscular esquelética "+E("smm"),"kg",r.pSMM,T_S,90,110,f(r.smm))}
+              ${scaleRow(T_F)}${barRow("Massa de gordura","kg",r.pFM,T_F,100*r.rng.FM[0]/r.stdFM,100*r.rng.FM[1]/r.stdFM,f(r.fm))}
             </div>
           </section>
 
-          <section class="blk">
-            <h3>Análise de obesidade</h3>
+          <section class="p-sec"><h3>Análise de obesidade</h3>
             <div class="bars">
-              ${scaleRow(T_BMI, v => String(v).replace(".",","))}
-              ${barRow("IMC","kg/m²",r.bmi,T_BMI,18.5,25,f(r.bmi))}
-              ${scaleRow(T_PBF)}
-              ${barRow("% de gordura","PGC",r.pbf,T_PBF,r.rng.PBF[0],r.rng.PBF[1],f(r.pbf))}
+              ${scaleRow(T_BMI)}${barRow("IMC","kg/m²",r.bmi,T_BMI,r.rng.BMI[0],r.rng.BMI[1],f(r.bmi))}
+              ${scaleRow(T_PBF)}${barRow("Percentual de gordura","%",r.pbf,T_PBF,r.rng.PBF[0],r.rng.PBF[1],f(r.pbf))}
             </div>
           </section>
 
-          ${segHtml}
+          ${r.hasSegM ? `<section class="p-sec"><h3>Massa magra segmentar <small>kg · % do padrão estimado *</small></h3>
+            <div class="bars">${scaleRow(T_SEG)}
+              ${SEGS.map(s => has(m[s]) ? barRow(SEGN[s], f(pr(m[s],r.segStd[s]),0)+"%", pr(m[s],r.segStd[s]), T_SEG, 90, 110, f(m[s])+" kg") : "").join("")}
+            </div></section>` : ""}
+
+          <section class="p-sec"><h3>Pontos de atenção</h3>
+            <ul class="notes">${(notes.length ? notes : ["Nenhum ponto de atenção pelos critérios usados."]).map(n=>`<li>${n}</li>`).join("")}</ul>
+          </section>
         </div>
 
-        <aside class="side">
-          <section class="blk">
-            <h3>Pontuação</h3>
-            <div class="score"><b>${r.score}</b><span>/100</span></div>
-            <p class="hint">Estimativa: 80 = músculo e gordura no padrão. Sobe com músculo extra, cai com gordura em excesso ou músculo em falta.</p>
+        <div class="p-col">
+          <section class="p-sec"><h3>Pontuação</h3>
+            <div class="box"><div class="score"><b>${r.score}</b><span>/100 pontos</span></div>
+            <div style="font-size:9px;color:var(--p-muted)">80 = músculo e gordura no padrão. Sobe com músculo extra; cai com gordura em excesso ou músculo em falta.</div></div>
           </section>
-
-          <section class="blk">
-            <h3>Perfil músculo-gordura</h3>
-            <div class="shape"><div class="glyph">${r.shape}</div><p>${shapeTxt}</p></div>
+          <section class="p-sec"><h3>Perfil músculo-gordura</h3>
+            <div class="box"><div class="shape"><div class="g">${r.shape}</div><p>${shapeTxt}</p></div></div>
           </section>
-
-          <section class="blk">
-            <h3>Controle de peso</h3>
-            <dl class="kv">
+          <section class="p-sec"><h3>Controle de peso</h3>
+            <dl class="kv box">
               <dt>Peso alvo</dt><dd>${f(r.target)} kg</dd>
               <dt>Controle de peso</dt><dd>${sgn(r.target - r.W)} kg</dd>
               <dt>Controle de gordura</dt><dd>${sgn(r.fatCtrl)} kg</dd>
               <dt>Controle muscular</dt><dd>${sgn(r.muscCtrl)} kg</dd>
             </dl>
           </section>
-
-          <section class="blk">
-            <h3>Parâmetros</h3>
-            <dl class="kv">
-              <dt>IMC</dt><dd>${f(r.bmi)} · ${bmiCls}</dd>
-              <dt>Metabolismo basal${est("bmr")}</dt><dd>${f(r.bmr,0)} kcal</dd>
-              <dt>Gordura visceral</dt><dd>${has(r.visc) ? `nível ${f(r.visc,r.visc%1?1:0)} ${pill(r.visc>=10?["bad","alto"]:["ok","normal"])}` : "—"}</dd>
-              <dt>Cintura</dt><dd>${has(r.waist) ? `${f(r.waist,0)} cm ${pill(r.waist>waistLim?["bad","alto"]:["ok","ok"])}` : "—"}</dd>
-              <dt>Relação cintura-quadril</dt><dd>${has(r.whr) ? `${f(r.whr,2)} ${pill(r.whr>whrLim?["bad","alto"]:["ok","ok"])}` : "—"}</dd>
-              <dt>Peso padrão (IMC 22)</dt><dd>${f(r.stdW)} kg</dd>
-              <dt>Massa magra / altura²</dt><dd>${f(r.ffm/(r.H*r.H))} kg/m²</dd>
+          <section class="p-sec"><h3>Avaliação</h3>
+            <dl class="kv box">
+              <dt>IMC</dt><dd>${st(status(r.bmi,...r.rng.BMI))}</dd>
+              <dt>% de gordura</dt><dd>${st(status(r.pbf,...r.rng.PBF))}</dd>
+              <dt>Proteína</dt><dd>${st(status(r.prot,...r.rng.PROT))}</dd>
+              <dt>Minerais</dt><dd>${st(status(r.min,...r.rng.MIN))}</dd>
+              <dt>Membros superiores</dt><dd>${st(balUp)}</dd>
+              <dt>Membros inferiores</dt><dd>${st(balLow)}</dd>
+              <dt>Superior × inferior</dt><dd>${st(balUL)}</dd>
             </dl>
           </section>
-
-          <section class="blk">
-            <h3>Pontos de atenção</h3>
-            <ul class="notes">${notes.map(n=>`<li>${n}</li>`).join("")}</ul>
+          <section class="p-sec"><h3>Gordura visceral</h3>
+            <div class="box">
+              <div style="display:flex;justify-content:space-between;align-items:baseline"><b style="font:700 15px var(--f-mono)">Nível ${has(r.visc) ? f(r.visc, r.visc%1 ? 1 : 0) : "—"}</b>${has(r.visc) ? st(r.visc >= 10 ? ["bad","Alto"] : ["ok","Normal"]) : ""}</div>
+              <div class="mini"><i style="left:0;width:${8/19*100}%;background:var(--p-band)"></i>${has(r.visc) ? `<span class="mk" style="left:calc(${(Math.min(20,Math.max(1,r.visc))-1)/19*100}% - 1px)"></span>` : ""}</div>
+              <div class="mini-s"><span>1</span><span>10</span><span>20</span></div>
+            </div>
           </section>
-        </aside>
+          <section class="p-sec"><h3>Parâmetros</h3>
+            <dl class="kv box">
+              <dt>Metabolismo basal ${E("bmr")}</dt><dd>${f(r.bmr,0)} kcal</dd>
+              <dt>Índice apendicular</dt><dd>${has(r.asmi) ? f(r.asmi,2) : "—"}</dd>
+              <dt>Idade metabólica</dt><dd>${has(r.metAge) ? f(r.metAge,0)+" anos" : "—"}</dd>
+              <dt>Massa magra/altura²</dt><dd>${f(r.ffmi)}</dd>
+              <dt>Peso padrão</dt><dd>${f(r.stdW)} kg</dd>
+              <dt>Grau de obesidade</dt><dd>${f(r.pW,0)}%</dd>
+              <dt>IMC</dt><dd>${f(r.bmi)}</dd>
+              <dt>Classificação</dt><dd>${bmiCls}</dd>
+              ${has(r.whr) ? `<dt>Cintura-quadril</dt><dd>${f(r.whr,2)}</dd>` : ""}
+            </dl>
+          </section>
+          ${extra.imp ? `<section class="p-sec"><h3>Impedância Z (Ω)</h3>
+            <table class="imp"><thead><tr><th></th><th>BD</th><th>BE</th><th>TR</th><th>PD</th><th>PE</th></tr></thead>
+            <tbody>${extra.imp.map(row => `<tr><td>${row.f} kHz</td>${row.z.map(z=>`<td>${z}</td>`).join("")}</tr>`).join("")}</tbody></table></section>` : ""}
+        </div>
       </div>
+      <div class="p-foot"><span><span class="est">*</span> Valor estimado. ${r.smmHist ? "Massa muscular esquelética estimada pela proporção músculo/massa magra do histórico do paciente. " : ""}Proteína = massa magra − água; minerais = massa livre de gordura − massa magra.</span><span>Página 1/2</span></div>
+    </div>`;
 
-      <p class="foot">* Valor estimado a partir da massa livre de gordura, porque o seu aparelho não informa esse dado.
-      Padrões calculados com IMC 22 para a sua altura. Bioimpedância varia com hidratação, refeição e horário: compare
-      medições feitas no mesmo aparelho e nas mesmas condições. Este laudo é informativo e não substitui avaliação profissional.</p>
-      <div class="btns noprint" id="printBox" hidden><button class="btn ghost small" type="button" id="imprimir">Imprimir / salvar PDF</button></div>`;
+    // ----- página 2 -----
+    const histAll = buildHistory(d, r);
+    const H6 = histAll.slice(-6);
+    const rows = [["W","Peso (kg)",1,true],["SMM","Massa musc. esquelética (kg)",1,false],["FM","Massa de gordura (kg)",1,true],["PBF","Percentual de gordura (%)",1,true],
+      ["SLM","Massa magra (kg)",1,false],["TBW","Água corporal (L)",1,null],["ICW","Água intracelular (L)",1,null],["ECW","Água extracelular (L)",1,null],["BMI","IMC",1,true],["VFL","Gordura visceral (nível)",0,true]];
+    const histHtml = H6.length >= 2 ? `<section class="p-sec"><h3>Histórico da composição corporal <small>${histAll.length > 6 ? "últimas 6 de "+histAll.length+" avaliações" : histAll.length+" avaliações"}</small></h3>
+      <table class="hist"><thead><tr><th></th>${H6.map(h=>`<th>${h.date}</th>`).join("")}<th>Variação</th></tr></thead><tbody>
+      ${rows.filter(([k]) => H6.some(h => has(h[k]))).map(([k,lab,dec,downGood]) => {
+        const first = H6.find(h => has(h[k])), lastH = [...H6].reverse().find(h => has(h[k]));
+        const dv = first && lastH && first !== lastH ? lastH[k] - first[k] : NaN;
+        const cls = !has(dv) || Math.abs(dv) < 0.05 || downGood === null ? "" : ((dv < 0) === downGood ? "down" : "up");
+        return `<tr><td>${lab}</td>${H6.map(h => `<td class="n" style="font-size:10.5px">${has(h[k]) ? f(h[k],dec) + (h.est && h.est[k] ? `<span class="est">*</span>` : "") : "—"}</td>`).join("")}<td class="n ${cls}" style="font-size:10.5px">${sgn(dv,dec)}</td></tr>`;
+      }).join("")}</tbody></table></section>` : "";
 
-    if (window.self === window.top){ $("printBox").hidden = false; $("imprimir").onclick = () => window.print(); }
+    const segTable = (r.hasSegM || r.hasSegG) ? `<section class="p-sec"><h3>Análise segmentar</h3>
+      <div class="two-p">
+        <div class="segfig">
+          ${["bd","tr","be","pd","pe"].map(s => `<div class="c ${s==="tr"?"tr":""}">${SEGN[s]}<b>${has(m[s]) ? f(m[s])+" kg" : "—"}</b>massa magra${has(m[s]) ? ` · ${f(pr(m[s],r.segStd[s]),0)}%` : ""}</div>`).join("")}
+        </div>
+        <table><thead><tr><th>Segmento</th><th>Magra kg</th><th>% padrão*</th><th>Gordura kg</th></tr></thead><tbody>
+          ${SEGS.map(s => `<tr><td>${SEGN[s]}</td><td class="n">${f(m[s])}</td><td class="r">${has(m[s]) ? f(pr(m[s],r.segStd[s]),0)+"%" : "—"}</td><td class="n">${f(g[s])}</td></tr>`).join("")}
+          <tr><td><b>Total</b></td><td class="n">${f(r.slm)}</td><td class="r">${f(r.slm/r.stdSLM*100,0)}%</td><td class="n">${f(r.fm)}</td></tr>
+        </tbody></table>
+      </div></section>` : "";
+
+    const p2 = `<div class="page" id="pg2">${ex}${head("Segmentar, histórico e orientações")}
+      ${segTable}
+      ${histHtml || `<section class="p-sec"><h3>Histórico da composição corporal</h3><p style="margin:0;color:var(--p-muted)">Sem avaliações anteriores no arquivo importado.</p></section>`}
+      <section class="p-sec"><h3>Como ler este laudo</h3>
+        <dl class="gloss">
+          <div><dt>Massa muscular esquelética</dt><dd>Músculos ligados aos ossos, os que você treina. Base da força e do metabolismo.</dd></div>
+          <div><dt>Massa de gordura</dt><dd>Toda a gordura do corpo em kg. O alvo é ficar dentro da faixa normal.</dd></div>
+          <div><dt>Massa livre de gordura</dt><dd>Tudo que não é gordura: músculos, órgãos, ossos e água.</dd></div>
+          <div><dt>Gordura visceral</dt><dd>Gordura em volta dos órgãos abdominais. Acima de 9 aumenta risco de diabetes e doença cardiovascular.</dd></div>
+          <div><dt>Barras em % do padrão</dt><dd>100% é o esperado para sua altura e sexo. A faixa verde mostra o intervalo normal.</dd></div>
+          <div><dt>Controle de peso</dt><dd>Quanto de gordura perder e de músculo ganhar para chegar à composição de referência.</dd></div>
+        </dl>
+      </section>
+      <section class="p-sec"><h3>Recomendações para a próxima avaliação</h3>
+        <ul class="notes">
+          <li>Faça o exame em jejum de 4 horas, com bexiga vazia e sem atividade física intensa nas 12 horas anteriores.</li>
+          <li>Repita no mesmo aparelho e no mesmo horário: hidratação e refeições alteram o resultado da bioimpedância.</li>
+          <li>Compare tendências entre avaliações, não variações isoladas de poucos décimos.</li>
+        </ul>
+      </section>
+      <div class="p-foot"><span>Laudo informativo gerado a partir de bioimpedância. Não substitui avaliação clínica. <span class="est">*</span> valores estimados.</span><span>Página 2/2</span></div>
+    </div>`;
+
+    stack.innerHTML = p1 + p2;
+    fit();
   }
 
-  // ---------- histórico ----------
-  function renderHist(){
-    const h = store.get(KEY_HIST, []).sort((a,b) => (a.data||"").localeCompare(b.data||""));
-    if (!h.length){ $("hist").innerHTML = `<p class="hist-empty">Nenhuma medição salva ainda. Preencha os dados e toque em <b>Salvar medição</b>.</p>`; return; }
-    const rows = h.map(d => ({d, r: compute(d)})).filter(x => x.r);
-    const delta = (cur, prev, key, goodDown) => {
-      if (!prev) return "";
-      const v = cur[key] - prev[key]; if (Math.abs(v) < 0.05) return "";
-      const good = goodDown ? v < 0 : v > 0;
-      return ` <small class="${good ? "down" : "up"}">${v>0?"▲":"▼"}${f(Math.abs(v))}</small>`;
-    };
-    $("hist").innerHTML = `<div class="scroll"><table><thead><tr><th>Data</th><th>Peso</th><th>Músc. esq.</th><th>Gordura kg</th><th>% gord.</th><th>Visceral</th><th>Pontos</th><th></th></tr></thead><tbody>
-      ${rows.map(({d,r},i) => { const p = rows[i-1]?.r; return `<tr>
-        <td>${d.data ? new Date(d.data+"T12:00").toLocaleDateString("pt-BR") : "—"}</td>
-        <td class="num">${f(r.W)}${delta(r,p,"W",true)}</td>
-        <td class="num">${f(r.smm)}${delta(r,p,"smm",false)}</td>
-        <td class="num">${f(r.fm)}${delta(r,p,"fm",true)}</td>
-        <td class="num">${f(r.pbf)}${delta(r,p,"pbf",true)}</td>
-        <td class="num">${has(r.visc)?f(r.visc,0):"—"}</td>
-        <td class="num">${r.score}</td>
-        <td class="del"><button class="btn ghost small" data-load="${i}" type="button">Abrir</button>
-          <button class="btn danger small" data-del="${i}" type="button">Excluir</button></td></tr>`; }).join("")}
-      </tbody></table></div>`;
-    $("hist").querySelectorAll("[data-load]").forEach(b => b.onclick = () => { fillForm(rows[+b.dataset.load].d); render(); show("painelLaudo"); });
-    $("hist").querySelectorAll("[data-del]").forEach(b => b.onclick = () => {
-      if (b.dataset.armed){ const all = store.get(KEY_HIST, []); const t = rows[+b.dataset.del].d;
-        store.set(KEY_HIST, all.filter(x => !(x.data === t.data && x.peso === t.peso))); renderHist(); }
-      else { b.dataset.armed = "1"; b.textContent = "Confirmar?"; }
-    });
+  function buildHistory(d, r){
+    const list = (extra.hist || []).map(h => ({...h}));
+    const today = dBR(d.data);
+    if (!list.some(h => h.date === today)){
+      list.push({date:today, W:r.W, PBF:r.pbf, FM:r.fm, SLM:r.slm, SMM:r.smm, TBW:r.tbw, BMI:r.bmi, VFL:r.visc, est:{SMM:!!r.est.smm, TBW:!!r.est.tbw}});
+    }
+    const key = s => s.split("/").reverse().join("");
+    return list.sort((a,b) => key(a.date).localeCompare(key(b.date)));
   }
 
-  // ---------- abas (celular) ----------
+  // ================= encaixe na tela =================
+  function fit(){
+    const box = $("vscroll"), stack = $("stack"), wrapEl = $("stackWrap");
+    const avail = box.clientWidth - 20;
+    const k = zoom100 ? 1 : Math.min(1, avail / 794);
+    stack.style.transform = `scale(${k})`;
+    wrapEl.style.width = (794*k) + "px";
+    wrapEl.style.height = (stack.offsetHeight * k) + "px";
+    $("zoom").textContent = zoom100 ? "Ajustar à tela" : "Ver em 100%";
+  }
+  window.addEventListener("resize", fit);
+  $("zoom").onclick = () => { zoom100 = !zoom100; fit(); };
+
+  // ================= abas (celular) =================
   function show(id){
     document.querySelectorAll(".tabs button").forEach(b => b.setAttribute("aria-selected", b.dataset.panel === id));
-    ["painelDados","painelLaudo","painelHist"].forEach(p => $(p).classList.toggle("off", p !== id));
-    window.scrollTo(0, 0);
+    ["painelDados","painelLaudo"].forEach(p => $(p).classList.toggle("off", p !== id));
+    fit();
   }
   document.querySelectorAll(".tabs button").forEach(b => b.onclick = () => show(b.dataset.panel));
 
-  // ---------- eventos ----------
-  $("form").addEventListener("input", render);
-  $("form").addEventListener("submit", e => {
-    e.preventDefault();
-    const d = readForm();
-    if (!compute(d)){ $("toast").style.color = "var(--bad)"; $("toast").textContent = "Preencha altura, peso e % de gordura antes de salvar."; return; }
-    const all = store.get(KEY_HIST, []).filter(x => x.data !== d.data);
-    all.push(d);
-    const ok = store.set(KEY_HIST, all);
-    $("toast").style.color = ok ? "var(--ok)" : "var(--bad)";
-    $("toast").textContent = ok ? `Medição de ${d.data ? new Date(d.data+"T12:00").toLocaleDateString("pt-BR") : "hoje"} salva no histórico.` : "Este navegador bloqueou o armazenamento. Use Copiar backup.";
-    renderHist();
-  });
-  $("limpar").onclick = () => { FIELDS.forEach(k => { if (!["sexo","muscTipo"].includes(k)) $(k).value = ""; }); $("data").value = new Date().toISOString().slice(0,10); render(); };
-  $("copiarBk").onclick = () => {
-    const txt = JSON.stringify(store.get(KEY_HIST, []));
-    $("bk").value = txt;
-    navigator.clipboard?.writeText(txt).then(() => $("toastBk").textContent = "Backup copiado.", () => { $("bk").select(); $("toastBk").textContent = "Selecione e copie o texto do campo."; })
-      ?? ($("bk").select(), $("toastBk").textContent = "Selecione e copie o texto do campo.");
-  };
-  $("importarBk").onclick = () => {
+  // ================= importação de PDF =================
+  const loaded = {};
+  function loadScript(src){
+    return loaded[src] ||= new Promise((ok, fail) => { const s = document.createElement("script"); s.src = src; s.onload = ok; s.onerror = () => fail(new Error("Não consegui carregar " + src)); document.head.appendChild(s); });
+  }
+  const PDFJS = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/";
+  async function pdfLines(buf){
+    await loadScript(PDFJS + "pdf.worker.min.js");   // roda o "worker" na própria página
+    await loadScript(PDFJS + "pdf.min.js");
+    const pdfjsLib = window.pdfjsLib;
+    pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS + "pdf.worker.min.js";
+    const doc = await pdfjsLib.getDocument({data: buf, isEvalSupported:false}).promise;
+    const pages = [];
+    for (let p = 1; p <= doc.numPages; p++){
+      const pg = await doc.getPage(p);
+      const vp = pg.getViewport({scale:1});
+      const tc = await pg.getTextContent();
+      const items = tc.items.filter(i => i.str && i.str.trim()).map(i => ({x:i.transform[4], y:i.transform[5], w:i.width, s:i.str.trim()}));
+      items.sort((a,b) => b.y - a.y || a.x - b.x);
+      const lines = [];
+      for (const it of items){
+        let L = lines.find(l => Math.abs(l.y - it.y) <= 2.5);
+        if (!L){ L = {y:it.y, chunks:[]}; lines.push(L); }
+        L.chunks.push(it);
+      }
+      lines.forEach(L => { L.chunks.sort((a,b) => a.x - b.x); L.text = L.chunks.map(c => c.s).join(" "); });
+      lines.sort((a,b) => b.y - a.y);
+      pages.push({w:vp.width, h:vp.height, lines, items});
+    }
+    return pages;
+  }
+
+  const NUMRE = /^-?\d{1,3}(?:\.\d{3})*(?:,\d+)?$|^-?\d+(?:,\d+)?$/;
+  const norm = s => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/\s+/g, " ").trim();
+
+  function parseReport(pages){
+    const out = {d:{}, extra:{}, found:[], warn:[]};
+    const all = pages.flatMap(p => p.lines.map(l => l.text));
+    const txt = all.join("\n");
+    const grab = (re) => { const m = txt.match(re); return m ? m[1].trim() : null; };
+
+    // cabeçalho
+    const nome = grab(/Nome:\s*(.+)/); if (nome){ out.d.nome = nome; out.found.push("nome"); }
+    const alt = grab(/Estatura:\s*([\d.,]+)\s*m/i); if (alt){ const v = br(alt); out.d.altura = String(v < 3 ? +(v*100).toFixed(1) : v); out.found.push("altura"); }
+    const dt = txt.match(/Data:\s*(\d{2})\/(\d{2})\/(\d{4})(?:\s+(\d{2}:\d{2}(?::\d{2})?))?/);
+    if (dt){ out.d.data = `${dt[3]}-${dt[2]}-${dt[1]}`; if (dt[4]) out.d.hora = dt[4].length === 5 ? dt[4]+":00" : dt[4]; }
+    const sx = grab(/Sexo:\s*(\S+)/); if (sx) out.d.sexo = /^f/i.test(sx) ? "F" : "M";
+    const id = grab(/Idade:\s*(\d+)/); if (id) out.d.idade = id;
+    const first = pages[0]?.lines || [];
+    const iNome = first.findIndex(l => /^Nome:/.test(l.text));
+    if (iNome > 0){
+      out.d.prof = first[0].text;
+      if (iNome > 1) out.d.local = first.slice(1, iNome).map(l => l.text).join(" ").replace(/^-\s*/, "").replace(/\s*-\s*/g, " - ");
+    }
+
+    // análise global resumida: linhas com 11 marcas de escala + valor
+    const keys = ["W","PBF","FM","SLM","TBW","BMI"], rng = {}, vals = {};
+    let started = false, rows = [];
+    for (const L of first){
+      if (/Análise Global/i.test(L.text)) { started = true; continue; }
+      if (!started) continue;
+      const nums = L.chunks.filter(c => NUMRE.test(c.s));
+      if (nums.length === 11) rows.push({ticks: nums.map(c => br(c.s)), val: null});
+      else if (nums.length === 1 && rows.length && rows[rows.length-1].val === null) rows[rows.length-1].val = br(nums[0].s);
+    }
+    if (rows.length >= 6){
+      rows.slice(0,6).forEach((rw, i) => { rng[keys[i]] = rw.ticks; vals[keys[i]] = rw.val; });
+      out.extra.rng = rng;
+      if (has(vals.W)) { out.d.peso = String(vals.W); out.found.push("peso"); }
+      if (has(vals.PBF)) { out.d.gord = String(vals.PBF); out.found.push("% gordura"); }
+      if (has(vals.SLM)) { out.d.slm = String(vals.SLM); out.found.push("massa magra"); }
+      if (has(vals.TBW)) { out.d.agua = String(vals.TBW); out.d.aguaUn = "L"; out.found.push("água"); }
+      out.found.push("faixas do aparelho");
+    } else out.warn.push("Não encontrei a tabela 'Análise Global Resumida'.");
+
+    // segmentar: valores "x,xkg" em cada metade da página
+    const segPage = pages.find(p => p.lines.some(l => /Massa Magra/i.test(l.text)));
+    if (segPage){
+      const kg = segPage.items.filter(i => /^[\d.,]+\s*kg$/i.test(i.s)).map(i => ({...i, v: br(i.s)}));
+      const half = segPage.w / 2;
+      [["m", kg.filter(i => i.x < half)], ["g", kg.filter(i => i.x >= half)]].forEach(([pre, arr]) => {
+        if (arr.length !== 6) return;
+        const max = arr.reduce((a,b) => b.v > a.v ? b : a);
+        const rest = arr.filter(i => i !== max).sort((a,b) => b.y - a.y);
+        const arms = rest.slice(0,2).sort((a,b) => a.x - b.x), trunk = rest[2], legs = rest.slice(3).sort((a,b) => a.x - b.x);
+        out.d[pre+"_bd"] = String(arms[0].v); out.d[pre+"_be"] = String(arms[1].v); out.d[pre+"_tr"] = String(trunk.v);
+        out.d[pre+"_pd"] = String(legs[0].v); out.d[pre+"_pe"] = String(legs[1].v);
+        out.found.push(pre === "m" ? "massa magra segmentar" : "gordura segmentar");
+      });
+    }
+
+    // dados adicionais
+    const kcal = grab(/([\d.]+)\s*kcal/i); if (kcal){ out.d.tmb = String(br(kcal)); out.found.push("metabolismo basal"); }
+    const ap = grab(/([\d.,]+)\s*kg\/m/i); if (ap){ out.d.asmi = String(br(ap)); out.found.push("índice apendicular"); }
+    const im = grab(/Metab[oó]lica[\s\S]{0,40}?(\d{1,3})\s*anos/i) || grab(/(\d{1,3})\s*anos/); if (im) out.d.idadeMet = im;
+    const vf = grab(/N[ií]vel\s+(\d+(?:,\d+)?)/); if (vf){ out.d.visc = String(br(vf)); out.found.push("gordura visceral"); }
+    const imp = [];
+    pages.forEach(p => p.lines.forEach(L => {
+      const m = L.text.match(/^(\d+)\s*kHz\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)$/i);
+      if (m) imp.push({f:m[1], z:m.slice(2,7).map(Number)});
+    }));
+    if (imp.length){ out.extra.imp = imp; out.found.push("impedâncias"); }
+
+    // histórico: colunas de datas; cada linha de N números pertence ao rótulo logo abaixo
+    const hi = pages.findIndex(p => p.lines.some(l => /Hist[oó]rico/i.test(l.text)));
+    if (hi >= 0){
+      const lines = pages.slice(hi).flatMap(p => p.lines);
+      const dates = lines.flatMap(l => l.chunks.map(c => c.s)).join(" ").match(/\d{2}\/\d{2}\/\d{4}/g) || [];
+      const N = dates.length;
+      if (N){
+        const map = {};
+        let pend = null;
+        const commit = () => { if (pend && pend.label) map[norm(pend.label)] = pend.vals; };
+        for (const L of lines){
+          const nums = L.chunks.filter(c => NUMRE.test(c.s));
+          if (nums.length === N && nums.length === L.chunks.length){ commit(); pend = {vals: nums.map(c => br(c.s)), label: ""}; }
+          else if (pend) pend.label += " " + L.text;
+        }
+        commit();
+        const K = [["massa magra braco direito","mBD"],["massa magra braco esquerdo","mBE"],["massa magra tronco","mTR"],["massa magra perna direita","mPD"],["massa magra perna esquerda","mPE"],
+          ["gordura braco direito","gBD"],["gordura braco esquerdo","gBE"],["gordura tronco","gTR"],["gordura perna direita","gPD"],["gordura perna esquerda","gPE"],
+          ["massa livre","SLM"],["massa de gordura","FM"],["percentual de gordura","PBF"],["esqueletica","SMM"],["intracelular","ICW"],["extracelular","ECW"],
+          ["agua corporal","TBW"],["imc","BMI"],["visceral","VFL"],["proteina","PROT"],["minerais","MIN"],["peso","W"]];
+        const hist = dates.map(dd => ({date: dd}));
+        Object.entries(map).forEach(([lab, vs]) => {
+          const k = K.find(([needle]) => lab.includes(needle));
+          if (k && !hist[0].hasOwnProperty(k[1])) vs.forEach((v, i) => hist[i][k[1]] = v);
+        });
+        out.extra.hist = hist;
+        out.found.push(`histórico (${N} avaliações)`);
+        out.warn.push("A massa muscular esquelética do dia não consta no PDF: estimada pela proporção do histórico (marcada com *).");
+        if (pages.slice(hi).some(p => p.items.some(i => i.x + i.w > p.w - 45))) out.warn.push("O histórico do PDF está cortado na margem direita; usei as colunas visíveis.");
+      }
+    }
+    return out;
+  }
+
+  async function importFile(file){
+    if (!file) return;
+    const msg = $("msg");
+    msg.className = "msg"; msg.textContent = `Lendo ${file.name}…`;
     try{
-      const arr = JSON.parse($("bk").value);
-      if (!Array.isArray(arr)) throw 0;
-      const all = store.get(KEY_HIST, []);
-      arr.forEach(d => { if (d && d.peso) { const i = all.findIndex(x => x.data === d.data); i >= 0 ? all[i] = d : all.push(d); } });
-      store.set(KEY_HIST, all); renderHist(); $("toastBk").textContent = `${arr.length} medição(ões) importada(s).`;
-    }catch(e){ $("toastBk").textContent = "Esse texto não é um backup válido. Cole exatamente o que o botão Copiar backup gerou."; }
+      const buf = new Uint8Array(await file.arrayBuffer());
+      const pages = await pdfLines(buf);
+      const res = parseReport(pages);
+      if (!res.d.peso || !res.d.gord){
+        msg.className = "msg bad";
+        msg.innerHTML = "Não reconheci este modelo de laudo (faltaram peso e % de gordura). Preencha em <b>Conferir dados</b> ou envie um exemplo para adaptar o leitor.";
+        return;
+      }
+      const keepProf = {prof:$("prof").value, local:$("local").value};
+      FIELDS.forEach(k => { if (!["sexo","muscTipo","aguaUn","prof","local"].includes(k)) $(k).value = ""; });
+      $("muscTipo").value = "esq_kg"; $("aguaUn").value = "L";
+      fillForm(res.d);
+      if (keepProf.prof) { $("prof").value = keepProf.prof; $("local").value = keepProf.local; }
+      extra = res.extra; isExample = false;
+      render();
+      msg.className = "msg ok";
+      msg.innerHTML = `Importado: ${res.found.join(", ")}. Confira em <b>Conferir dados</b> antes de exportar.` + (res.warn.length ? `<ul>${res.warn.map(w => `<li>${esc(w)}</li>`).join("")}</ul>` : "");
+    }catch(e){
+      msg.className = "msg bad";
+      msg.textContent = "Não consegui ler esse PDF: " + (e && e.message ? e.message : e) + ". Verifique se é um PDF com texto (não uma foto escaneada).";
+    }
+  }
+  $("arquivo").addEventListener("change", e => { importFile(e.target.files[0]); e.target.value = ""; });
+  const drop = $("drop");
+  ["dragenter","dragover"].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add("over"); }));
+  ["dragleave","drop"].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove("over"); }));
+  drop.addEventListener("drop", e => importFile(e.dataTransfer.files[0]));
+
+  // ================= exportação =================
+  const dlPromise = (window.claude && typeof window.claude.use === "function") ? window.claude.use("downloads").catch(() => null) : Promise.resolve(null);
+  $("exportar").onclick = async () => {
+    const btn = $("exportar"), msg = $("msg");
+    btn.disabled = true; $("busy").hidden = false;
+    const prevZoom = zoom100;
+    try{
+      await Promise.all([loadScript("https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"),
+                         loadScript("https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js")]);
+      if (document.fonts && document.fonts.ready) await document.fonts.ready;
+      zoom100 = true; fit();
+      const { jsPDF } = window.jspdf;
+      const pdf = new jsPDF({unit:"mm", format:"a4", compress:true});
+      const pages = [...document.querySelectorAll("#stack .page")];
+      for (let i = 0; i < pages.length; i++){
+        const c = await window.html2canvas(pages[i], {scale:2.5, backgroundColor:"#ffffff", logging:false});
+        if (i) pdf.addPage();
+        pdf.addImage(c.toDataURL("image/jpeg", 0.93), "JPEG", 0, 0, 210, 297);
+      }
+      const d = readForm();
+      const nome = (d.nome || "paciente").normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^\w]+/g, "_").replace(/^_|_$/g, "");
+      const filename = `Laudo_${nome}_${(d.data || "").replace(/-/g, "")}.pdf`;
+      const dl = await Promise.race([dlPromise, new Promise(r => setTimeout(() => r(null), 1500))]);
+      if (dl){
+        try{ await dl.save({filename, data: pdf.output("blob")}); msg.className = "msg ok"; msg.textContent = `${filename} salvo.`; }
+        catch(e){ msg.className = "msg bad"; msg.textContent = e && e.code === "declined" ? "Download cancelado." : "O download não está disponível nesta visualização. Abra o app pelo endereço do GitHub Pages."; }
+      } else if (window.self === window.top){
+        pdf.save(filename); msg.className = "msg ok"; msg.textContent = `${filename} gerado.`;
+      } else {
+        msg.className = "msg bad"; msg.textContent = "Esta visualização bloqueia downloads. Abra o app pelo endereço do GitHub Pages.";
+      }
+    }catch(e){
+      msg.className = "msg bad"; msg.textContent = "Falha ao gerar o PDF: " + (e && e.message ? e.message : e);
+    }finally{
+      zoom100 = prevZoom; fit(); btn.disabled = false; $("busy").hidden = true;
+    }
   };
 
-  // ---------- início ----------
-  fillForm(store.get(KEY_DRAFT, null) || EXEMPLO);
-  if (!$("data").value) $("data").value = new Date().toISOString().slice(0,10);
-  render(); renderHist(); show("painelLaudo");
+  // ================= eventos e início =================
+  $("form").addEventListener("input", () => { isExample = false; render(); });
+  $("form").addEventListener("submit", e => e.preventDefault());
+  $("limpar").onclick = () => {
+    FIELDS.forEach(k => { if (!["sexo","muscTipo","aguaUn","prof","local"].includes(k)) $(k).value = ""; });
+    $("data").value = new Date().toISOString().slice(0,10);
+    extra = {}; isExample = false; $("msg").textContent = ""; render();
+  };
+  fillForm(EXEMPLO);
+  fillForm(store.get(KEY_PROF, {}));
+  render(); show("painelLaudo");
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(fit);
 })();
 </script>
 </body>

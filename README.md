@@ -1,17 +1,29 @@
 # Laudo Corporal
 
-Transforma os números de qualquer balança/aparelho de bioimpedância num laudo completo,
-no estilo dos relatórios clínicos de composição corporal:
+Importa o PDF de uma bioimpedância e gera um laudo de composição corporal no estilo dos
+relatórios clínicos (análise de composição, músculo-gordura, obesidade, segmentar, histórico),
+exportável em PDF A4 para entregar ao paciente.
 
-- Análise da composição corporal (água, proteína, minerais, gordura, massa magra) com faixas normais
-- Análise músculo-gordura em % do padrão para a altura
-- Análise de obesidade (IMC e % de gordura)
-- Pontuação estimada, perfil C/I/D, controle de peso, TMB, visceral, RCQ
-- Análise segmentar (se o aparelho medir)
-- Histórico com variações entre medições e backup em JSON
+## Uso
 
-É um único `index.html`, sem servidor. Abra no navegador ou publique no GitHub Pages
-(Settings → Pages → Branch). Os dados ficam só no navegador (localStorage).
+1. Abra `index.html` no navegador (ou publique no GitHub Pages: Settings → Pages → branch).
+2. **Importar laudo em PDF**: o arquivo é lido no próprio aparelho; nada é enviado a servidor.
+3. Confira os valores em **Conferir dados** (todos editáveis).
+4. **Exportar PDF do paciente**: gera `Laudo_<Nome>_<data>.pdf` com 2 páginas A4.
 
-Valores que o aparelho não fornece são estimados a partir da massa livre de gordura e marcados com `*`.
-Laudo informativo; não substitui avaliação profissional.
+Também dá para digitar os valores de qualquer balança à mão.
+
+## Formatos reconhecidos
+
+- **Avanutri (AVABIO-380, relatório "Relatório de Avaliações")**: identificação, faixas de
+  normalidade do aparelho, massa magra e gordura segmentar, TMB, índice apendicular, idade
+  metabólica, gordura visceral, impedâncias (5/50/250 kHz) e histórico.
+  - A "Massa Livre de Gordura" da Avanutri é tratada como **massa magra** (água + proteína, sem
+    minerais): ela soma com os segmentos e, com gordura + minerais, fecha o peso.
+  - O PDF não traz a massa muscular esquelética do dia: ela é estimada pela proporção
+    músculo/massa magra da última avaliação do histórico e marcada com `*`.
+
+## Modelo
+
+Peso = gordura + minerais + massa magra (água + proteína). Valores ausentes são estimados e marcados com `*`.
+Laudo informativo; não substitui avaliação clínica.
