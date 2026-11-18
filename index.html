@@ -1,0 +1,606 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Laudo Corporal</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="theme-color" content="#0e5466">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+/* Layout: ficha clínica — formulário à esquerda (desktop) ou em aba (celular), laudo em folha branca com réguas de % do padrão */
+:root{
+  --bg:#eef2f3; --paper:#ffffff; --ink:#14232a; --muted:#5b6d74; --line:#d3dde0; --soft:#f4f7f8;
+  --accent:#0e5466; --accent-ink:#ffffff; --bar:#24363d; --band:#d9ebe4;
+  --ok:#1d7a4c; --warn:#b26a00; --bad:#b3261e;
+  --f-display:"Archivo","Helvetica Neue",Arial,sans-serif;
+  --f-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0c1416; --paper:#131e21; --ink:#e3ecee; --muted:#93a6ac; --line:#2a3a3f; --soft:#18262a;
+    --accent:#4fb3c7; --accent-ink:#06191e; --bar:#c9d8dc; --band:#1d3a33;
+    --ok:#5fcf93; --warn:#f0a83c; --bad:#ff7a6e; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0c1416; --paper:#131e21; --ink:#e3ecee; --muted:#93a6ac; --line:#2a3a3f; --soft:#18262a;
+  --accent:#4fb3c7; --accent-ink:#06191e; --bar:#c9d8dc; --band:#1d3a33;
+  --ok:#5fcf93; --warn:#f0a83c; --bad:#ff7a6e; color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:15px/1.5 var(--f-body);
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:16px 48px}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0}
+.wrap{max-width:1280px;margin:0 auto;display:grid;gap:16px}
+header.top{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px}
+header.top h1{font-size:1.5rem;font-weight:800;letter-spacing:-.01em}
+header.top h1 span{color:var(--accent)}
+header.top p{margin:0;color:var(--muted);font-size:.85rem}
+.tabs{display:none;gap:4px;background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:4px}
+.tabs button{flex:1;border:0;background:transparent;color:var(--ink);font:600 .9rem var(--f-body);padding:10px 8px;border-radius:7px;cursor:pointer}
+.tabs button[aria-selected="true"]{background:var(--accent);color:var(--accent-ink)}
+.grid{display:grid;grid-template-columns:minmax(300px,380px) minmax(0,1fr);gap:16px;align-items:start}
+.panel{min-width:0}
+@media (max-width:900px){
+  .grid{grid-template-columns:minmax(0,1fr)}
+  .tabs{display:flex;position:sticky;top:env(safe-area-inset-top,0px);z-index:5}
+  .panel.off{display:none}
+}
+/* formulário */
+form.card{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:16px;display:grid;gap:14px}
+@media (min-width:901px){form.card{position:sticky;top:16px;max-height:calc(100vh - 32px);overflow:auto}}
+fieldset{border:0;margin:0;padding:0;display:grid;gap:10px}
+legend{font:700 .72rem var(--f-display);text-transform:uppercase;letter-spacing:.08em;color:var(--accent);padding:0;margin-bottom:6px}
+.row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.row3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+label{display:grid;gap:4px;font-size:.78rem;color:var(--muted);font-weight:500;min-width:0}
+input,select,textarea{width:100%;font:500 .95rem var(--f-body);color:var(--ink);background:var(--soft);border:1px solid var(--line);border-radius:8px;padding:9px 10px;min-width:0}
+input:focus-visible,select:focus-visible,textarea:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+input[type=number]{font-family:var(--f-mono)}
+details summary{cursor:pointer;font:700 .72rem var(--f-display);text-transform:uppercase;letter-spacing:.08em;color:var(--accent)}
+details[open] summary{margin-bottom:10px}
+.hint{font-size:.75rem;color:var(--muted);margin:0}
+.btns{display:flex;flex-wrap:wrap;gap:8px}
+.btn{border:1px solid var(--accent);background:var(--accent);color:var(--accent-ink);font:600 .88rem var(--f-body);padding:10px 14px;border-radius:8px;cursor:pointer}
+.btn.ghost{background:transparent;color:var(--accent)}
+.btn.small{padding:6px 10px;font-size:.8rem}
+.btn.danger{border-color:var(--bad);color:var(--bad);background:transparent}
+.toast{font-size:.8rem;color:var(--ok);min-height:1.2em;margin:0}
+/* laudo */
+.sheet{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:20px;display:grid;gap:22px}
+.sheet-head{display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px;border-bottom:2px solid var(--ink);padding-bottom:12px}
+.sheet-head h2{font-size:1.25rem;font-weight:800}
+.ident{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:.85rem}
+.ident b{font-family:var(--f-mono);font-weight:600}
+.ident span{color:var(--muted)}
+.example{background:var(--soft);border:1px dashed var(--warn);color:var(--ink);border-radius:8px;padding:8px 12px;font-size:.82rem}
+section.blk{display:grid;gap:10px;min-width:0;align-content:start}
+section.blk>h3{font-size:.95rem;font-weight:800;text-transform:uppercase;letter-spacing:.04em;display:flex;align-items:baseline;gap:8px;border-bottom:1px solid var(--line);padding-bottom:6px}
+section.blk>h3 small{font:400 .75rem var(--f-body);text-transform:none;letter-spacing:0;color:var(--muted)}
+.two{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:22px;align-items:start}
+@media (max-width:1100px){.two{grid-template-columns:minmax(0,1fr)}}
+.scroll{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:.85rem;font-variant-numeric:tabular-nums}
+th,td{padding:7px 8px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+thead th{font:600 .7rem var(--f-body);text-transform:uppercase;letter-spacing:.05em;color:var(--muted);background:var(--soft)}
+td.num{font-family:var(--f-mono);font-weight:600}
+td.rng{color:var(--muted);font-family:var(--f-mono);font-size:.78rem}
+/* réguas */
+.bars{display:grid;gap:4px}
+.brow{display:grid;grid-template-columns:132px minmax(0,1fr);gap:10px;align-items:center}
+.brow .lab{font-size:.8rem;font-weight:600;line-height:1.2}
+.brow .lab small{display:block;font-weight:400;color:var(--muted);font-size:.7rem}
+.scale{position:relative;height:18px;font:500 .66rem var(--f-mono);color:var(--muted)}
+.scale span{position:absolute;transform:translateX(-50%);top:2px}
+.track{position:relative;height:22px;background:var(--soft);border-radius:2px}
+.track .band{position:absolute;top:0;bottom:0;background:var(--band)}
+.track .tick{position:absolute;top:0;bottom:0;width:1px;background:var(--line)}
+.track .fill{position:absolute;left:0;top:5px;height:12px;background:var(--bar);border-radius:0 2px 2px 0}
+.track .val{position:absolute;top:2px;font:600 .78rem var(--f-mono);color:var(--ink);white-space:nowrap}
+@media (max-width:520px){.brow{grid-template-columns:86px minmax(0,1fr)}.scale span.alt{display:none}}
+.pill{display:inline-block;font:600 .7rem var(--f-body);padding:2px 8px;border-radius:99px;border:1px solid currentColor}
+.pill.ok{color:var(--ok)}.pill.warn{color:var(--warn)}.pill.bad{color:var(--bad)}.pill.neu{color:var(--muted)}
+/* lateral */
+.side{display:grid;gap:16px;align-content:start}
+.score{display:flex;align-items:baseline;gap:6px}
+.score b{font:800 3rem/1 var(--f-display);color:var(--accent)}
+.score span{color:var(--muted);font-family:var(--f-mono)}
+.kv{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 12px;font-size:.85rem}
+.kv dt{color:var(--muted)}
+.kv dd{margin:0;text-align:right;font:600 .85rem var(--f-mono)}
+.shape{display:flex;gap:12px;align-items:center}
+.shape .glyph{font:800 2.4rem/1 var(--f-display);width:56px;height:56px;display:grid;place-items:center;border:2px solid var(--ink);border-radius:8px}
+.shape p{margin:0;font-size:.82rem}
+/* segmentar */
+.body{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;max-width:520px}
+.seg{background:var(--soft);border:1px solid var(--line);border-radius:8px;padding:8px;text-align:center;font-size:.75rem;color:var(--muted)}
+.seg b{display:block;font:600 1rem var(--f-mono);color:var(--ink)}
+.seg.tr{grid-row:span 2;display:grid;align-content:center}
+.notes{margin:0;padding-left:18px;font-size:.85rem;display:grid;gap:4px}
+.foot{font-size:.75rem;color:var(--muted);border-top:1px solid var(--line);padding-top:12px;margin:0}
+.hist-empty{color:var(--muted);font-size:.85rem;margin:0}
+.up{color:var(--warn)}.down{color:var(--ok)}
+td.del{white-space:nowrap}
+@media print{
+  body{background:#fff;padding:0}
+  header.top,.tabs,#painelDados,.noprint{display:none!important}
+  .grid{grid-template-columns:1fr}
+  .panel.off{display:block!important}
+  .sheet{border:0;padding:0}
+}
+@media (prefers-reduced-motion:no-preference){.track .fill{transition:width .4s ease}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1>Laudo <span>Corporal</span></h1>
+      <p>Transforma os números da sua balança de bioimpedância num laudo completo.</p>
+    </div>
+  </header>
+
+  <nav class="tabs" role="tablist" aria-label="Seções">
+    <button id="tabDados" role="tab" aria-selected="false" data-panel="painelDados">Dados</button>
+    <button id="tabLaudo" role="tab" aria-selected="true" data-panel="painelLaudo">Laudo</button>
+    <button id="tabHist" role="tab" aria-selected="false" data-panel="painelHist">Histórico</button>
+  </nav>
+
+  <div class="grid">
+    <div class="panel off" id="painelDados">
+      <form class="card" id="form" autocomplete="off">
+        <fieldset>
+          <legend>Identificação</legend>
+          <label>Nome<input id="nome" type="text" placeholder="Seu nome"></label>
+          <div class="row">
+            <label>Data da medição<input id="data" type="date"></label>
+            <label>Sexo<select id="sexo"><option value="M">Masculino</option><option value="F">Feminino</option></select></label>
+          </div>
+          <div class="row3">
+            <label>Idade<input id="idade" type="number" inputmode="decimal" step="1"></label>
+            <label>Altura (cm)<input id="altura" type="number" inputmode="decimal" step="0.1"></label>
+            <label>Peso (kg)<input id="peso" type="number" inputmode="decimal" step="0.1"></label>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>O que o seu laudo traz</legend>
+          <label>Gordura corporal (%) *<input id="gord" type="number" inputmode="decimal" step="0.1"></label>
+          <div class="row">
+            <label>Músculo<input id="musc" type="number" inputmode="decimal" step="0.1" placeholder="vazio = estimar"></label>
+            <label>Esse número é…<select id="muscTipo">
+              <option value="esq_kg">Músc. esquelético (kg)</option>
+              <option value="esq_pct">Músc. esquelético (%)</option>
+              <option value="tot_kg">Massa muscular total (kg)</option>
+              <option value="tot_pct">Massa muscular total (%)</option>
+            </select></label>
+          </div>
+          <p class="hint">Balanças tipo Omron dão "músculo esquelético %". Tanita, Xiaomi e similares dão "massa muscular" total, que inclui músculo liso e órgãos.</p>
+          <div class="row">
+            <label>Água corporal (%)<input id="agua" type="number" inputmode="decimal" step="0.1"></label>
+            <label>Massa óssea (kg)<input id="osso" type="number" inputmode="decimal" step="0.1"></label>
+          </div>
+          <div class="row">
+            <label>Gordura visceral (nível)<input id="visc" type="number" inputmode="decimal" step="0.5"></label>
+            <label>Metab. basal (kcal)<input id="tmb" type="number" inputmode="decimal" step="1" placeholder="vazio = calcular"></label>
+          </div>
+          <div class="row">
+            <label>Cintura (cm)<input id="cintura" type="number" inputmode="decimal" step="0.1"></label>
+            <label>Quadril (cm)<input id="quadril" type="number" inputmode="decimal" step="0.1"></label>
+          </div>
+        </fieldset>
+
+        <details id="segDetails">
+          <summary>Segmentar (se o aparelho mede)</summary>
+          <fieldset>
+            <p class="hint">Músculo em kg por segmento. Gordura em % (deixe vazio o que não tiver).</p>
+            <div class="row3">
+              <label>Braço D kg<input id="m_bd" type="number" inputmode="decimal" step="0.01"></label>
+              <label>Braço E kg<input id="m_be" type="number" inputmode="decimal" step="0.01"></label>
+              <label>Tronco kg<input id="m_tr" type="number" inputmode="decimal" step="0.01"></label>
+              <label>Perna D kg<input id="m_pd" type="number" inputmode="decimal" step="0.01"></label>
+              <label>Perna E kg<input id="m_pe" type="number" inputmode="decimal" step="0.01"></label>
+            </div>
+            <div class="row3">
+              <label>Braço D gord %<input id="g_bd" type="number" inputmode="decimal" step="0.1"></label>
+              <label>Braço E gord %<input id="g_be" type="number" inputmode="decimal" step="0.1"></label>
+              <label>Tronco gord %<input id="g_tr" type="number" inputmode="decimal" step="0.1"></label>
+              <label>Perna D gord %<input id="g_pd" type="number" inputmode="decimal" step="0.1"></label>
+              <label>Perna E gord %<input id="g_pe" type="number" inputmode="decimal" step="0.1"></label>
+            </div>
+          </fieldset>
+        </details>
+
+        <div class="btns">
+          <button class="btn" type="submit" id="salvar">Salvar medição</button>
+          <button class="btn ghost" type="button" id="limpar">Limpar campos</button>
+        </div>
+        <p class="toast" id="toast" role="status"></p>
+      </form>
+    </div>
+
+    <div class="panel" id="painelLaudo">
+      <article class="sheet" id="laudo"></article>
+    </div>
+
+    <div class="panel off" id="painelHist" style="grid-column:1/-1">
+      <article class="sheet">
+        <section class="blk">
+          <h3>Histórico <small>medições salvas neste navegador</small></h3>
+          <div id="hist"></div>
+        </section>
+        <section class="blk noprint">
+          <h3>Backup <small>leve seus dados para outro aparelho</small></h3>
+          <div class="btns">
+            <button class="btn ghost small" type="button" id="copiarBk">Copiar backup</button>
+            <button class="btn ghost small" type="button" id="importarBk">Importar do campo abaixo</button>
+          </div>
+          <label>Backup (JSON)<textarea id="bk" rows="4" placeholder="Cole aqui um backup para importar"></textarea></label>
+          <p class="toast" id="toastBk" role="status"></p>
+        </section>
+      </article>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const FIELDS = ["nome","data","sexo","idade","altura","peso","gord","musc","muscTipo","agua","osso","visc","tmb","cintura","quadril",
+    "m_bd","m_be","m_tr","m_pd","m_pe","g_bd","g_be","g_tr","g_pd","g_pe"];
+  const TEXT = new Set(["nome","data","sexo","muscTipo"]);
+  const EXEMPLO = {nome:"Exemplo",data:new Date().toISOString().slice(0,10),sexo:"M",idade:"38",altura:"176",peso:"84.6",gord:"26.4",
+    musc:"33.1",muscTipo:"esq_pct",agua:"52.1",osso:"",visc:"11",tmb:"",cintura:"95",quadril:"101",
+    m_bd:"",m_be:"",m_tr:"",m_pd:"",m_pe:"",g_bd:"",g_be:"",g_tr:"",g_pd:"",g_pe:""};
+  const KEY_HIST = "laudoCorporal.hist", KEY_DRAFT = "laudoCorporal.draft";
+
+  const store = {
+    get(k, d){ try{ const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; }catch(e){ return d; } },
+    set(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); return true; }catch(e){ return false; } }
+  };
+  const num = v => { if (v === undefined || v === null) return NaN; const n = parseFloat(String(v).replace(",", ".")); return isFinite(n) ? n : NaN; };
+  const has = v => isFinite(v);
+  const f = (v, d = 1) => has(v) ? v.toLocaleString("pt-BR", {minimumFractionDigits:d, maximumFractionDigits:d}) : "—";
+  const sgn = (v, d = 1) => has(v) ? (v > 0 ? "+" : v < 0 ? "−" : "") + f(Math.abs(v), d) : "—";
+  const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+  function readForm(){ const d = {}; FIELDS.forEach(k => d[k] = $(k).value); return d; }
+  function fillForm(d){ FIELDS.forEach(k => { if (d[k] !== undefined) $(k).value = d[k]; }); }
+
+  // ---------- cálculos ----------
+  function compute(d){
+    const M = d.sexo !== "F";
+    const H = num(d.altura) / 100, W = num(d.peso), pbf = num(d.gord), age = num(d.idade);
+    if (!(H > 1 && W > 20 && pbf > 2 && pbf < 70)) return null;
+    const r = {M, H, W, pbf, age, est:{}};
+    r.bmi = W / (H*H);
+    r.fm = W * pbf / 100;
+    r.ffm = W - r.fm;
+    // água
+    const agua = num(d.agua);
+    if (has(agua) && agua > 20 && agua < 80) r.tbw = W * agua / 100; else { r.tbw = r.ffm * 0.732; r.est.tbw = true; }
+    // minerais
+    const osso = num(d.osso);
+    if (has(osso) && osso > 0.5) r.min = osso * 1.22; else { r.min = r.ffm * 0.068; r.est.min = true; }
+    // proteína = resto da massa magra
+    r.prot = r.ffm - r.tbw - r.min;
+    if (r.prot < r.ffm * 0.12 || r.prot > r.ffm * 0.30) { r.tbw = r.ffm*0.732; r.min = r.ffm*0.068; r.prot = r.ffm - r.tbw - r.min; r.est.tbw = r.est.min = true; r.est.incoerente = true; }
+    r.est.prot = true;
+    // músculo esquelético
+    const mv = num(d.musc);
+    if (has(mv) && mv > 0){
+      switch (d.muscTipo){
+        case "esq_kg": r.smm = mv; break;
+        case "esq_pct": r.smm = W * mv / 100; break;
+        case "tot_kg": r.smm = mv * 0.60; r.est.smm = true; break;
+        case "tot_pct": r.smm = W * mv / 100 * 0.60; r.est.smm = true; break;
+      }
+    } else { r.smm = r.ffm * (M ? 0.567 : 0.53); r.est.smm = true; }
+    // padrões (IMC 22 como peso padrão)
+    r.stdW = 22 * H * H;
+    r.stdFM = r.stdW * (M ? 0.15 : 0.23);
+    r.stdFFM = r.stdW - r.stdFM;
+    r.stdSMM = r.stdW * (M ? 0.497 : 0.41);
+    r.pW = W / r.stdW * 100; r.pSMM = r.smm / r.stdSMM * 100; r.pFM = r.fm / r.stdFM * 100;
+    // TMB
+    const tmb = num(d.tmb);
+    r.bmr = has(tmb) && tmb > 500 ? tmb : 370 + 21.6 * r.ffm; r.est.bmr = !(has(tmb) && tmb > 500);
+    // controle de peso
+    r.fatCtrl = r.fm > r.stdFM ? -(r.fm - r.stdFM) : (r.fm < r.stdFM*0.8 ? r.stdFM*0.8 - r.fm : 0);
+    r.muscCtrl = r.smm < r.stdSMM ? (r.stdSMM - r.smm) : 0;
+    r.target = W + r.fatCtrl + r.muscCtrl / 0.567;
+    // pontuação estimada (80 = composição no padrão)
+    r.score = Math.round(Math.max(0, Math.min(100,
+      80 - Math.max(0, r.fm - r.stdFM) - Math.max(0, r.stdFM*0.8 - r.fm)
+         + Math.min(10, Math.max(0, r.smm - r.stdSMM)) - Math.max(0, r.stdSMM - r.smm) * 1.5)));
+    // perfil C / I / D
+    const dW = r.pW - 100, dS = r.pSMM - 100, dF = r.pFM - 100;
+    if (r.pSMM < 95 && r.pFM > 120) r.shape = "C";
+    else if (r.pSMM >= 105 && r.pSMM > r.pW && r.pFM <= 120) r.shape = "D";
+    else r.shape = "I";
+    // obesidade / RCQ / visceral
+    r.whr = num(d.cintura) / num(d.quadril);
+    r.waist = num(d.cintura);
+    r.visc = num(d.visc);
+    // ranges
+    r.rng = {
+      W:[r.stdW*0.85, r.stdW*1.15], SMM:[r.stdSMM*0.9, r.stdSMM*1.1], FM:[r.stdFM*0.8, r.stdFM*1.6],
+      TBW:[r.stdFFM*0.732*0.9, r.stdFFM*0.732*1.1], PROT:[r.stdFFM*0.2*0.9, r.stdFFM*0.2*1.1],
+      MIN:[r.stdFFM*0.068*0.9, r.stdFFM*0.068*1.1], FFM:[r.stdFFM*0.9, r.stdFFM*1.1],
+      BMI:[18.5, 25], PBF: M ? [10, 20] : [18, 28]
+    };
+    // segmentar
+    const segs = ["bd","be","tr","pd","pe"];
+    r.segM = {}; r.segG = {};
+    segs.forEach(s => { r.segM[s] = num(d["m_"+s]); r.segG[s] = num(d["g_"+s]); });
+    r.hasSeg = segs.some(s => has(r.segM[s]) || has(r.segG[s]));
+    return r;
+  }
+
+  function status(v, lo, hi){
+    if (!has(v)) return ["neu","—"];
+    if (v < lo) return ["warn","Abaixo"];
+    if (v > hi) return ["bad","Acima"];
+    return ["ok","Normal"];
+  }
+  const pill = ([c, t]) => `<span class="pill ${c}">${t}</span>`;
+
+  // régua com marcas equidistantes (escala por partes)
+  function pos(v, ticks){
+    if (v <= ticks[0]) return 0;
+    const n = ticks.length - 1;
+    for (let i = 0; i < n; i++) if (v <= ticks[i+1]) return (i + (v - ticks[i]) / (ticks[i+1] - ticks[i])) / n;
+    return 1;
+  }
+  function scaleRow(ticks, fmt = v => v){
+    return `<div class="brow"><div></div><div class="scale">${ticks.map((t,i) =>
+      `<span class="${i%2 ? "alt" : ""}" style="left:${pos(t,ticks)*100}%">${fmt(t)}</span>`).join("")}</div></div>`;
+  }
+  function barRow(label, sub, value, ticks, lo, hi, text){
+    const p = pos(value, ticks);
+    const tickHtml = ticks.slice(1,-1).map(t => `<i class="tick" style="left:${pos(t,ticks)*100}%"></i>`).join("");
+    const valLeft = p > 0.78 ? `right:${(1-p)*100 + 1}%;` : `left:calc(${p*100}% + 6px);`;
+    return `<div class="brow"><div class="lab">${label}${sub ? `<small>${sub}</small>` : ""}</div>
+      <div class="track"><i class="band" style="left:${pos(lo,ticks)*100}%;width:${(pos(hi,ticks)-pos(lo,ticks))*100}%"></i>${tickHtml}
+      <i class="fill" style="width:${Math.max(0.01,p)*100}%"></i><span class="val" style="${valLeft}${p>0.78?"color:var(--accent-ink);top:3px;font-size:.72rem":""}">${text}</span></div></div>`;
+  }
+
+  // ---------- render ----------
+  function render(){
+    const d = readForm();
+    store.set(KEY_DRAFT, d);
+    const r = compute(d);
+    const el = $("laudo");
+    if (!r){
+      el.innerHTML = `<section class="blk"><h3>Faltam dados</h3><p>Preencha altura, peso e % de gordura para gerar o laudo.</p></section>`;
+      return;
+    }
+    const isEx = d.nome === "Exemplo";
+    const est = k => r.est[k] ? ` <span title="valor estimado">*</span>` : "";
+    const dataBR = d.data ? new Date(d.data + "T12:00").toLocaleDateString("pt-BR") : "—";
+
+    const T_W = [55,70,85,100,115,130,145,160,175,190,205];
+    const T_S = [70,80,90,100,110,120,130,140,150,160,170];
+    const T_F = [40,60,80,100,160,220,280,340,400,460,520];
+    const T_BMI = [10,15,18.5,21,25,30,35,40,45,50,55];
+    const T_PBF = r.M ? [0,5,10,15,20,25,30,35,40,45,50] : [8,13,18,23,28,33,38,43,48,53,58];
+
+    const shapeTxt = {
+      C:"Músculo abaixo do padrão e gordura acima. Prioridade: ganhar músculo e reduzir gordura.",
+      I:"Peso, músculo e gordura em proporção parecida. Ajuste fino conforme o objetivo.",
+      D:"Músculo acima do padrão com gordura controlada. Perfil atlético."
+    }[r.shape];
+
+    const bmiCls = r.bmi < 18.5 ? "Baixo peso" : r.bmi < 25 ? "Eutrófico" : r.bmi < 30 ? "Sobrepeso" : r.bmi < 35 ? "Obesidade I" : r.bmi < 40 ? "Obesidade II" : "Obesidade III";
+    const whrLim = r.M ? 0.90 : 0.85, waistLim = r.M ? 94 : 80;
+
+    let notes = [];
+    if (r.pFM > 160) notes.push("Massa de gordura bem acima do padrão para sua altura.");
+    if (r.pSMM < 90) notes.push("Músculo esquelético abaixo da faixa normal. Treino de força e proteína adequada ajudam.");
+    if (has(r.visc) && r.visc >= 10) notes.push(`Gordura visceral nível ${f(r.visc,0)}: acima de 9 indica risco metabólico aumentado.`);
+    if (has(r.whr) && r.whr > whrLim) notes.push(`Relação cintura-quadril ${f(r.whr,2)} acima de ${f(whrLim,2)} (OMS).`);
+    if (r.est.incoerente) notes.push("Água/ossos informados não fecham com a massa magra; usei estimativas padrão.");
+    if (!notes.length) notes.push("Nenhum ponto de atenção pelos critérios usados.");
+
+    // segmentar
+    let segHtml = "";
+    if (r.hasSeg){
+      const m = r.segM, g = r.segG;
+      const cell = (k, nome) => `<div class="seg ${k==="tr"?"tr":""}">${nome}<b>${has(m[k]) ? f(m[k],2)+" kg" : "—"}</b>${has(g[k]) ? `gord ${f(g[k],1)}%` : ""}</div>`;
+      const bal = [];
+      const cmp = (a, b, nome) => { if (has(a) && has(b) && Math.min(a,b) > 0){ const diff = Math.abs(a-b)/Math.min(a,b)*100; bal.push(`${nome}: diferença D×E de ${f(diff,1)}% ${diff > 10 ? pill(["warn","desequilíbrio"]) : pill(["ok","equilibrado"])}`); } };
+      cmp(m.bd, m.be, "Braços"); cmp(m.pd, m.pe, "Pernas");
+      if ([m.bd,m.be,m.pd,m.pe].every(has)){ const ratio = (m.bd+m.be)/(m.pd+m.pe); bal.push(`Superior/inferior: ${f(ratio,2)} ${ratio < 0.3 ? pill(["warn","membros superiores fracos"]) : ratio > 0.45 ? pill(["warn","membros inferiores fracos"]) : pill(["ok","proporcional"])}`); }
+      segHtml = `<section class="blk"><h3>Análise segmentar <small>massa magra por região</small></h3>
+        <div class="body">${cell("bd","Braço D")}${cell("tr","Tronco")}${cell("be","Braço E")}${cell("pd","Perna D")}<div></div>${cell("pe","Perna E")}</div>
+        ${bal.length ? `<ul class="notes">${bal.map(b=>`<li>${b}</li>`).join("")}</ul>` : ""}</section>`;
+    }
+
+    el.innerHTML = `
+      <div class="sheet-head">
+        <h2>Laudo de Composição Corporal</h2>
+        <div class="ident">
+          <div><span>Nome </span><b>${esc(d.nome || "—")}</b></div>
+          <div><span>Data </span><b>${dataBR}</b></div>
+          <div><span>Sexo </span><b>${r.M ? "M" : "F"}</b></div>
+          <div><span>Idade </span><b>${has(r.age) ? f(r.age,0) : "—"}</b></div>
+          <div><span>Altura </span><b>${f(r.H*100,0)} cm</b></div>
+        </div>
+      </div>
+      ${isEx ? `<div class="example">Dados de exemplo. Abra <b>Dados</b> e digite os números do seu laudo.</div>` : ""}
+
+      <div class="two">
+        <div style="display:grid;gap:22px;min-width:0;align-content:start">
+          <section class="blk">
+            <h3>Análise da composição corporal</h3>
+            <div class="scroll"><table>
+              <thead><tr><th>Componente</th><th>Valor (kg)</th><th>Faixa normal</th><th></th></tr></thead>
+              <tbody>
+                <tr><td>Água corporal total${est("tbw")}</td><td class="num">${f(r.tbw)}</td><td class="rng">${f(r.rng.TBW[0])} – ${f(r.rng.TBW[1])}</td><td>${pill(status(r.tbw,...r.rng.TBW))}</td></tr>
+                <tr><td>Proteína${est("prot")}</td><td class="num">${f(r.prot)}</td><td class="rng">${f(r.rng.PROT[0])} – ${f(r.rng.PROT[1])}</td><td>${pill(status(r.prot,...r.rng.PROT))}</td></tr>
+                <tr><td>Minerais${est("min")}</td><td class="num">${f(r.min,2)}</td><td class="rng">${f(r.rng.MIN[0],2)} – ${f(r.rng.MIN[1],2)}</td><td>${pill(status(r.min,...r.rng.MIN))}</td></tr>
+                <tr><td>Massa de gordura</td><td class="num">${f(r.fm)}</td><td class="rng">${f(r.rng.FM[0])} – ${f(r.rng.FM[1])}</td><td>${pill(status(r.fm,...r.rng.FM))}</td></tr>
+                <tr><td><b>Massa livre de gordura</b></td><td class="num">${f(r.ffm)}</td><td class="rng">${f(r.rng.FFM[0])} – ${f(r.rng.FFM[1])}</td><td>${pill(status(r.ffm,...r.rng.FFM))}</td></tr>
+                <tr><td><b>Peso</b></td><td class="num">${f(r.W)}</td><td class="rng">${f(r.rng.W[0])} – ${f(r.rng.W[1])}</td><td>${pill(status(r.W,...r.rng.W))}</td></tr>
+              </tbody></table></div>
+          </section>
+
+          <section class="blk">
+            <h3>Análise músculo-gordura <small>% do padrão para sua altura · faixa verde = normal</small></h3>
+            <div class="bars">
+              ${scaleRow(T_W)}
+              ${barRow("Peso","kg",r.pW,T_W,85,115,f(r.W))}
+              ${scaleRow(T_S)}
+              ${barRow("Músc. esquelético"+est("smm"),"kg",r.pSMM,T_S,90,110,f(r.smm))}
+              ${scaleRow(T_F)}
+              ${barRow("Massa de gordura","kg",r.pFM,T_F,80,160,f(r.fm))}
+            </div>
+          </section>
+
+          <section class="blk">
+            <h3>Análise de obesidade</h3>
+            <div class="bars">
+              ${scaleRow(T_BMI, v => String(v).replace(".",","))}
+              ${barRow("IMC","kg/m²",r.bmi,T_BMI,18.5,25,f(r.bmi))}
+              ${scaleRow(T_PBF)}
+              ${barRow("% de gordura","PGC",r.pbf,T_PBF,r.rng.PBF[0],r.rng.PBF[1],f(r.pbf))}
+            </div>
+          </section>
+
+          ${segHtml}
+        </div>
+
+        <aside class="side">
+          <section class="blk">
+            <h3>Pontuação</h3>
+            <div class="score"><b>${r.score}</b><span>/100</span></div>
+            <p class="hint">Estimativa: 80 = músculo e gordura no padrão. Sobe com músculo extra, cai com gordura em excesso ou músculo em falta.</p>
+          </section>
+
+          <section class="blk">
+            <h3>Perfil músculo-gordura</h3>
+            <div class="shape"><div class="glyph">${r.shape}</div><p>${shapeTxt}</p></div>
+          </section>
+
+          <section class="blk">
+            <h3>Controle de peso</h3>
+            <dl class="kv">
+              <dt>Peso alvo</dt><dd>${f(r.target)} kg</dd>
+              <dt>Controle de peso</dt><dd>${sgn(r.target - r.W)} kg</dd>
+              <dt>Controle de gordura</dt><dd>${sgn(r.fatCtrl)} kg</dd>
+              <dt>Controle muscular</dt><dd>${sgn(r.muscCtrl)} kg</dd>
+            </dl>
+          </section>
+
+          <section class="blk">
+            <h3>Parâmetros</h3>
+            <dl class="kv">
+              <dt>IMC</dt><dd>${f(r.bmi)} · ${bmiCls}</dd>
+              <dt>Metabolismo basal${est("bmr")}</dt><dd>${f(r.bmr,0)} kcal</dd>
+              <dt>Gordura visceral</dt><dd>${has(r.visc) ? `nível ${f(r.visc,r.visc%1?1:0)} ${pill(r.visc>=10?["bad","alto"]:["ok","normal"])}` : "—"}</dd>
+              <dt>Cintura</dt><dd>${has(r.waist) ? `${f(r.waist,0)} cm ${pill(r.waist>waistLim?["bad","alto"]:["ok","ok"])}` : "—"}</dd>
+              <dt>Relação cintura-quadril</dt><dd>${has(r.whr) ? `${f(r.whr,2)} ${pill(r.whr>whrLim?["bad","alto"]:["ok","ok"])}` : "—"}</dd>
+              <dt>Peso padrão (IMC 22)</dt><dd>${f(r.stdW)} kg</dd>
+              <dt>Massa magra / altura²</dt><dd>${f(r.ffm/(r.H*r.H))} kg/m²</dd>
+            </dl>
+          </section>
+
+          <section class="blk">
+            <h3>Pontos de atenção</h3>
+            <ul class="notes">${notes.map(n=>`<li>${n}</li>`).join("")}</ul>
+          </section>
+        </aside>
+      </div>
+
+      <p class="foot">* Valor estimado a partir da massa livre de gordura, porque o seu aparelho não informa esse dado.
+      Padrões calculados com IMC 22 para a sua altura. Bioimpedância varia com hidratação, refeição e horário: compare
+      medições feitas no mesmo aparelho e nas mesmas condições. Este laudo é informativo e não substitui avaliação profissional.</p>
+      <div class="btns noprint" id="printBox" hidden><button class="btn ghost small" type="button" id="imprimir">Imprimir / salvar PDF</button></div>`;
+
+    if (window.self === window.top){ $("printBox").hidden = false; $("imprimir").onclick = () => window.print(); }
+  }
+
+  // ---------- histórico ----------
+  function renderHist(){
+    const h = store.get(KEY_HIST, []).sort((a,b) => (a.data||"").localeCompare(b.data||""));
+    if (!h.length){ $("hist").innerHTML = `<p class="hist-empty">Nenhuma medição salva ainda. Preencha os dados e toque em <b>Salvar medição</b>.</p>`; return; }
+    const rows = h.map(d => ({d, r: compute(d)})).filter(x => x.r);
+    const delta = (cur, prev, key, goodDown) => {
+      if (!prev) return "";
+      const v = cur[key] - prev[key]; if (Math.abs(v) < 0.05) return "";
+      const good = goodDown ? v < 0 : v > 0;
+      return ` <small class="${good ? "down" : "up"}">${v>0?"▲":"▼"}${f(Math.abs(v))}</small>`;
+    };
+    $("hist").innerHTML = `<div class="scroll"><table><thead><tr><th>Data</th><th>Peso</th><th>Músc. esq.</th><th>Gordura kg</th><th>% gord.</th><th>Visceral</th><th>Pontos</th><th></th></tr></thead><tbody>
+      ${rows.map(({d,r},i) => { const p = rows[i-1]?.r; return `<tr>
+        <td>${d.data ? new Date(d.data+"T12:00").toLocaleDateString("pt-BR") : "—"}</td>
+        <td class="num">${f(r.W)}${delta(r,p,"W",true)}</td>
+        <td class="num">${f(r.smm)}${delta(r,p,"smm",false)}</td>
+        <td class="num">${f(r.fm)}${delta(r,p,"fm",true)}</td>
+        <td class="num">${f(r.pbf)}${delta(r,p,"pbf",true)}</td>
+        <td class="num">${has(r.visc)?f(r.visc,0):"—"}</td>
+        <td class="num">${r.score}</td>
+        <td class="del"><button class="btn ghost small" data-load="${i}" type="button">Abrir</button>
+          <button class="btn danger small" data-del="${i}" type="button">Excluir</button></td></tr>`; }).join("")}
+      </tbody></table></div>`;
+    $("hist").querySelectorAll("[data-load]").forEach(b => b.onclick = () => { fillForm(rows[+b.dataset.load].d); render(); show("painelLaudo"); });
+    $("hist").querySelectorAll("[data-del]").forEach(b => b.onclick = () => {
+      if (b.dataset.armed){ const all = store.get(KEY_HIST, []); const t = rows[+b.dataset.del].d;
+        store.set(KEY_HIST, all.filter(x => !(x.data === t.data && x.peso === t.peso))); renderHist(); }
+      else { b.dataset.armed = "1"; b.textContent = "Confirmar?"; }
+    });
+  }
+
+  // ---------- abas (celular) ----------
+  function show(id){
+    document.querySelectorAll(".tabs button").forEach(b => b.setAttribute("aria-selected", b.dataset.panel === id));
+    ["painelDados","painelLaudo","painelHist"].forEach(p => $(p).classList.toggle("off", p !== id));
+    window.scrollTo(0, 0);
+  }
+  document.querySelectorAll(".tabs button").forEach(b => b.onclick = () => show(b.dataset.panel));
+
+  // ---------- eventos ----------
+  $("form").addEventListener("input", render);
+  $("form").addEventListener("submit", e => {
+    e.preventDefault();
+    const d = readForm();
+    if (!compute(d)){ $("toast").style.color = "var(--bad)"; $("toast").textContent = "Preencha altura, peso e % de gordura antes de salvar."; return; }
+    const all = store.get(KEY_HIST, []).filter(x => x.data !== d.data);
+    all.push(d);
+    const ok = store.set(KEY_HIST, all);
+    $("toast").style.color = ok ? "var(--ok)" : "var(--bad)";
+    $("toast").textContent = ok ? `Medição de ${d.data ? new Date(d.data+"T12:00").toLocaleDateString("pt-BR") : "hoje"} salva no histórico.` : "Este navegador bloqueou o armazenamento. Use Copiar backup.";
+    renderHist();
+  });
+  $("limpar").onclick = () => { FIELDS.forEach(k => { if (!["sexo","muscTipo"].includes(k)) $(k).value = ""; }); $("data").value = new Date().toISOString().slice(0,10); render(); };
+  $("copiarBk").onclick = () => {
+    const txt = JSON.stringify(store.get(KEY_HIST, []));
+    $("bk").value = txt;
+    navigator.clipboard?.writeText(txt).then(() => $("toastBk").textContent = "Backup copiado.", () => { $("bk").select(); $("toastBk").textContent = "Selecione e copie o texto do campo."; })
+      ?? ($("bk").select(), $("toastBk").textContent = "Selecione e copie o texto do campo.");
+  };
+  $("importarBk").onclick = () => {
+    try{
+      const arr = JSON.parse($("bk").value);
+      if (!Array.isArray(arr)) throw 0;
+      const all = store.get(KEY_HIST, []);
+      arr.forEach(d => { if (d && d.peso) { const i = all.findIndex(x => x.data === d.data); i >= 0 ? all[i] = d : all.push(d); } });
+      store.set(KEY_HIST, all); renderHist(); $("toastBk").textContent = `${arr.length} medição(ões) importada(s).`;
+    }catch(e){ $("toastBk").textContent = "Esse texto não é um backup válido. Cole exatamente o que o botão Copiar backup gerou."; }
+  };
+
+  // ---------- início ----------
+  fillForm(store.get(KEY_DRAFT, null) || EXEMPLO);
+  if (!$("data").value) $("data").value = new Date().toISOString().slice(0,10);
+  render(); renderHist(); show("painelLaudo");
+})();
+</script>
+</body>
+</html>
