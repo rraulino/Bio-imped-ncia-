@@ -131,9 +131,6 @@ details[open] summary{margin-bottom:10px}
 .track .fill{position:absolute;left:0;top:4px;height:9px;background:var(--p-bar)}
 .track .val{position:absolute;top:1px;font:700 10.5px var(--f-mono);color:var(--p-ink);white-space:nowrap}
 .box{border:1px solid var(--p-line);padding:8px;display:grid;gap:6px}
-.score{display:flex;align-items:baseline;gap:4px}
-.score b{font:800 40px/1 var(--f-display);color:var(--p-head)}
-.score span{font:500 12px var(--f-mono);color:var(--p-muted)}
 .kv{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:3px 8px;margin:0}
 .kv dt{color:var(--p-muted)}
 .kv dd{margin:0;text-align:right;font:600 10.5px var(--f-mono)}
@@ -142,7 +139,7 @@ details[open] summary{margin-bottom:10px}
 .mini i{position:absolute;top:0;bottom:0}
 .mini .mk{position:absolute;top:-3px;width:3px;height:16px;background:var(--p-ink)}
 .mini-s{display:flex;justify-content:space-between;font:500 8px var(--f-mono);color:var(--p-muted)}
-.imp th,.imp td{padding:3px 4px;font-size:9.5px}
+.imp th,.imp td{padding:2px 6px;font-size:9.5px}
 .imp td{font-family:var(--f-mono)}
 .shape{display:flex;gap:8px;align-items:center}
 .shape .g{font:800 26px/1 var(--f-display);width:38px;height:38px;display:grid;place-items:center;border:2px solid var(--p-ink);flex:none}
@@ -167,7 +164,7 @@ details[open] summary{margin-bottom:10px}
 .hd.n{font:600 11px var(--f-mono);color:var(--p-ink);text-transform:none}
 .hd.up,.hnote .up{color:var(--p-bad)}.hd.down,.hnote .down{color:var(--p-ok)}
 .hnote{font-size:8.5px;color:var(--p-muted);margin-top:4px}
-.gloss{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:2px 16px;font-size:9.5px;margin:0}
+.gloss{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:2px 14px;font-size:9.5px;margin:0}
 .gloss dt{font-weight:700}
 .gloss dd{margin:0 0 2px;color:var(--p-muted)}
 .exbadge{position:absolute;top:10px;right:32px;font:700 9px var(--f-body);color:var(--p-warn);border:1px solid var(--p-warn);padding:1px 6px;text-transform:uppercase;letter-spacing:.06em}
@@ -382,13 +379,13 @@ details[open] summary{margin-bottom:10px}
     r.fatCtrl = r.fm > r.stdFM ? -(r.fm - r.stdFM) : (r.fm < r.rng.FM[0] ? r.rng.FM[0] - r.fm : 0);
     r.muscCtrl = r.smm < r.stdSMM ? r.stdSMM - r.smm : 0;
     r.target = W + r.fatCtrl + r.muscCtrl / 0.567;
-    r.score = Math.round(Math.max(0, Math.min(100,
-      80 - Math.max(0, r.fm - r.stdFM) - Math.max(0, r.rng.FM[0] - r.fm)
-         + Math.min(10, Math.max(0, r.smm - r.stdSMM)) - Math.max(0, r.stdSMM - r.smm) * 1.5)));
+    // índices de massa gorda e livre de gordura (faixas de IMC normal em adultos; Nutrition 2003)
+    r.fmi = r.fm / (H*H); r.ffmi = r.ffm / (H*H);
+    r.fmiRef = M ? {lo:1.8, hi:5.2, ob:8.3, max:12} : {lo:3.9, hi:8.2, ob:11.8, max:16};
+    r.ffmiRef = M ? {lo:16.7, hi:19.8, min:12, max:24} : {lo:14.6, hi:16.8, min:10, max:22};
     r.shape = (r.pSMM < 95 && r.pFM > 120) ? "C" : (r.pSMM >= 105 && r.pSMM > r.pW && r.pFM <= 140) ? "D" : "I";
     r.whr = num(d.cintura) / num(d.quadril); r.waist = num(d.cintura);
     r.visc = num(d.visc); r.asmi = num(d.asmi); r.metAge = num(d.idadeMet);
-    r.ffmi = r.ffm / (H*H);
     // segmentar
     const frac = M ? {bd:.062,be:.062,tr:.50,pd:.188,pe:.188} : {bd:.052,be:.052,tr:.52,pd:.188,pe:.188};
     r.segM = {}; r.segG = {}; r.segStd = {};
@@ -428,6 +425,15 @@ details[open] summary{margin-bottom:10px}
     return `<div class="brow"><div class="lab">${label}${sub ? `<small>${sub}</small>` : ""}</div>
       <div class="track"><i class="band" style="left:${pos(lo,ticks)*100}%;width:${(pos(hi,ticks)-pos(lo,ticks))*100}%"></i>${tk}
       <i class="fill" style="width:${Math.max(0.01,p)*100}%"></i><span class="val" style="${vs}">${text}</span></div></div>`;
+  }
+
+  function idxBlock(label, v, min, max, lo, hi, cls){
+    const P = x => Math.max(0, Math.min(1, (x - min) / (max - min))) * 100;
+    return `<div style="display:grid;gap:2px">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;gap:6px"><span style="font-size:9.5px;color:var(--p-muted)">${label}</span>${st(cls)}</div>
+      <b style="font:700 18px/1 var(--f-mono)">${f(v)}</b>
+      <div class="mini"><i style="left:${P(lo)}%;width:${P(hi)-P(lo)}%;background:var(--p-band)"></i><span class="mk" style="left:calc(${P(v)}% - 1px)"></span></div>
+      <div class="mini-s"><span>${f(min,0)}</span><span>${f(max,0)}</span></div></div>`;
   }
 
   // ================= render =================
@@ -482,6 +488,9 @@ details[open] summary{margin-bottom:10px}
     if (r.pbf > r.rng.PBF[1]) notes.push(`Percentual de gordura ${f(r.pbf)}% acima do recomendado (${f(r.rng.PBF[0],0)}–${f(r.rng.PBF[1],0)}%).`);
     if (r.smm < r.rng.SMM[0]) notes.push("Músculo esquelético abaixo do padrão: treino de força e ingestão proteica adequada.");
     else if (r.smm > r.rng.SMM[1]) notes.push(`Massa muscular esquelética acima do padrão (${f(r.pSMM,0)}% do esperado): boa reserva muscular.`);
+    if (r.fmi > r.fmiRef.hi) notes.push(`Índice de massa gorda ${f(r.fmi)} kg/m², acima da faixa normal (${f(r.fmiRef.lo)}–${f(r.fmiRef.hi)}).`);
+    if (r.ffmi > r.ffmiRef.hi) notes.push(`Índice de massa livre de gordura ${f(r.ffmi)} kg/m², acima da faixa de referência: boa reserva de massa magra.`);
+    else if (r.ffmi < r.ffmiRef.lo) notes.push(`Índice de massa livre de gordura ${f(r.ffmi)} kg/m², abaixo da referência: atenção à perda de massa magra.`);
     if (has(r.visc)) notes.push(r.visc >= 10 ? `Gordura visceral nível ${f(r.visc,0)}: acima de 9, associada a maior risco cardiometabólico.` : `Gordura visceral nível ${f(r.visc,0)}, dentro do normal (até 9).`);
     if (r.bmi >= 25 && r.pbf <= r.rng.PBF[1]) notes.push("IMC elevado com gordura normal: o excesso de peso vem de massa magra.");
     if (balUp[0]==="warn" || balLow[0]==="warn") notes.push("Diferença entre lados acima de 10% em membros: avaliar dominância e assimetria de treino.");
@@ -533,9 +542,12 @@ details[open] summary{margin-bottom:10px}
         </div>
 
         <div class="p-col">
-          <section class="p-sec"><h3>Pontuação</h3>
-            <div class="box"><div class="score"><b>${r.score}</b><span>/100 pontos</span></div>
-            <div style="font-size:9px;color:var(--p-muted)">80 = músculo e gordura no padrão. Sobe com músculo extra; cai com gordura em excesso ou músculo em falta.</div></div>
+          <section class="p-sec"><h3>Índices corporais <small>kg/m²</small></h3>
+            <div class="box">${idxBlock("Massa gorda (FMI)", r.fmi, 0, r.fmiRef.max, r.fmiRef.lo, r.fmiRef.hi,
+                r.fmi < r.fmiRef.lo ? ["warn","Baixo"] : r.fmi <= r.fmiRef.hi ? ["ok","Normal"] : r.fmi < r.fmiRef.ob ? ["bad","Excesso"] : ["bad","Obesidade"])}
+              ${idxBlock("Massa livre de gordura (FFMI)", r.ffmi, r.ffmiRef.min, r.ffmiRef.max, r.ffmiRef.lo, r.ffmiRef.hi,
+                r.ffmi < r.ffmiRef.lo ? ["warn","Baixo"] : r.ffmi <= r.ffmiRef.hi ? ["ok","Normal"] : ["ok","Acima"])}
+              <div style="font-size:8px;color:var(--p-muted)">Faixa normal ${r.M ? "masculina" : "feminina"}: FMI ${f(r.fmiRef.lo)}–${f(r.fmiRef.hi)} · FFMI ${f(r.ffmiRef.lo)}–${f(r.ffmiRef.hi)}. Ref.: Body composition interpretation: contributions of the fat-free mass index and the body fat mass index. Nutrition, 2003.</div></div>
           </section>
           <section class="p-sec"><h3>Perfil músculo-gordura</h3>
             <div class="box"><div class="shape"><div class="g">${r.shape}</div><p>${shapeTxt}</p></div></div>
@@ -571,17 +583,13 @@ details[open] summary{margin-bottom:10px}
               <dt>Metabolismo basal ${E("bmr")}</dt><dd>${f(r.bmr,0)} kcal</dd>
               <dt>Índice apendicular</dt><dd>${has(r.asmi) ? f(r.asmi,2) : "—"}</dd>
               <dt>Idade metabólica</dt><dd>${has(r.metAge) ? f(r.metAge,0)+" anos" : "—"}</dd>
-              <dt>Massa magra/altura²</dt><dd>${f(r.ffmi)}</dd>
               <dt>Peso padrão</dt><dd>${f(r.stdW)} kg</dd>
               <dt>Grau de obesidade</dt><dd>${f(r.pW,0)}%</dd>
-              <dt>IMC</dt><dd>${f(r.bmi)}</dd>
               <dt>Classificação</dt><dd>${bmiCls}</dd>
               ${has(r.whr) ? `<dt>Cintura-quadril</dt><dd>${f(r.whr,2)}</dd>` : ""}
             </dl>
           </section>
-          ${extra.imp ? `<section class="p-sec"><h3>Impedância Z (Ω)</h3>
-            <table class="imp"><thead><tr><th></th><th>BD</th><th>BE</th><th>TR</th><th>PD</th><th>PE</th></tr></thead>
-            <tbody>${extra.imp.map(row => `<tr><td>${row.f} kHz</td>${row.z.map(z=>`<td>${z}</td>`).join("")}</tr>`).join("")}</tbody></table></section>` : ""}
+
         </div>
       </div>
       <div class="p-foot"><span><span class="est">*</span> Valor estimado. ${r.smmHist ? "Massa muscular esquelética estimada pela proporção músculo/massa magra do histórico do paciente. " : ""}Proteína = massa magra − água; minerais = massa livre de gordura − massa magra.</span><span>Página 1/2</span></div>
@@ -607,6 +615,9 @@ details[open] summary{margin-bottom:10px}
 
     const p2 = `<div class="page" id="pg2">${ex}${head("Segmentar, histórico e orientações")}
       ${segTable}
+${extra.imp ? `<section class="p-sec"><h3>Impedância Z (Ω) <small>braços, tronco e pernas por frequência</small></h3>
+            <table class="imp"><thead><tr><th></th><th>BD</th><th>BE</th><th>TR</th><th>PD</th><th>PE</th></tr></thead>
+            <tbody>${extra.imp.map(row => `<tr><td>${row.f} kHz</td>${row.z.map(z=>`<td>${z}</td>`).join("")}</tr>`).join("")}</tbody></table></section>` : ""}
       ${histHtml || `<section class="p-sec"><h3>Histórico da composição corporal</h3><p style="margin:0;color:var(--p-muted)">Sem avaliações anteriores no arquivo importado.</p></section>`}
       <section class="p-sec"><h3>Como ler este laudo</h3>
         <dl class="gloss">
@@ -634,7 +645,7 @@ details[open] summary{margin-bottom:10px}
 
   // histórico: uma linha por indicador, pontos alinhados às datas, escala própria por linha
   function histChart(H, total, rows){
-    const n = H.length, PW = 440, PH = 37, X = i => (i + 0.5) * PW / n;
+    const n = H.length, PW = 440, PH = 33, X = i => (i + 0.5) * PW / n;
     const lastI = n - 1, prevI = n - 2;
     const cell = (dv, dec, downGood) => {
       if (!has(dv)) return `<div class="hd n">—</div>`;
@@ -649,7 +660,7 @@ details[open] summary{margin-bottom:10px}
       let lo = Math.min(...ok), hi = Math.max(...ok);
       const minSpan = Math.max(k === "VFL" ? 2 : 0, Math.abs(mean) * 0.05);
       if (hi - lo < minSpan){ const c = (hi + lo) / 2; lo = c - minSpan/2; hi = c + minSpan/2; }
-      const Y = v => 31 - (v - lo) / (hi - lo) * 17;
+      const Y = v => 28 - (v - lo) / (hi - lo) * 15;
       const pts = vals.map((v, i) => has(v) ? [X(i), Y(v), v, i] : null).filter(Boolean);
       const path = pts.map((p, j) => (j ? "L" : "M") + p[0].toFixed(1) + " " + p[1].toFixed(1)).join(" ");
       const marks = pts.map(([x, y, v, i]) => {
